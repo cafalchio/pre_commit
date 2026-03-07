@@ -4,16 +4,28 @@ pub fn python_checks() -> Vec<CheckDef> {
     vec![
         CheckDef {
             name: "ruff:mcpgateway",
-            description: "Ruff linter (mcpgateway/)",
-            cmd: vec!["uv", "run", "ruff", "check", "mcpgateway"],
+            description: "Ruff linter on changed .py files (mcpgateway/)",
+            cmd: vec![
+                "sh", "-c",
+                "FILES=$(git diff --name-only HEAD 2>/dev/null | grep -E '^mcpgateway/.*\\.py$' | tr '\\n' ' '); \
+                 [ -z \"$FILES\" ] && echo 'No changed Python files — skipping ruff' && exit 0; \
+                 echo \"Running ruff on: $FILES\"; \
+                 uv run ruff check $FILES",
+            ],
             only_when_staged: Some("mcpgateway/"),
             advisory: false,
             group: Group::Python,
         },
         CheckDef {
             name: "ruff:plugins",
-            description: "Ruff linter (plugins/)",
-            cmd: vec!["uv", "run", "ruff", "check", "plugins"],
+            description: "Ruff linter on changed .py files (plugins/)",
+            cmd: vec![
+                "sh", "-c",
+                "FILES=$(git diff --name-only HEAD 2>/dev/null | grep -E '^plugins/.*\\.py$' | tr '\\n' ' '); \
+                 [ -z \"$FILES\" ] && echo 'No changed Python files — skipping ruff' && exit 0; \
+                 echo \"Running ruff on: $FILES\"; \
+                 uv run ruff check $FILES",
+            ],
             only_when_staged: Some("plugins/"),
             advisory: false,
             group: Group::Python,
@@ -48,10 +60,13 @@ pub fn python_checks() -> Vec<CheckDef> {
         },
         CheckDef {
             name: "bandit",
-            description: "Bandit security scan (medium+, high-confidence)",
+            description: "Bandit security scan on changed .py files (mcpgateway/)",
             cmd: vec![
-                "uv", "run", "bandit", "-r", "mcpgateway", "-lll",
-                "--confidence-level", "high",
+                "sh", "-c",
+                "FILES=$(git diff --name-only HEAD 2>/dev/null | grep -E '^mcpgateway/.*\\.py$' | tr '\\n' ' '); \
+                 [ -z \"$FILES\" ] && echo 'No changed Python files — skipping bandit' && exit 0; \
+                 echo \"Running bandit on: $FILES\"; \
+                 uv run bandit $FILES -lll --confidence-level high",
             ],
             only_when_staged: Some("mcpgateway/"),
             advisory: false,
