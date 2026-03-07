@@ -30,7 +30,7 @@ fn main() -> io::Result<()> {
 
     // Headless mode: run one check and exit, no TUI.
     if let Some(ref name) = config.run_check {
-        run_headless(name, &config.repo, &config.venv);
+        run_headless(name, &config.repo);
         return Ok(());
     }
 
@@ -102,10 +102,13 @@ fn main() -> io::Result<()> {
                     KeyCode::Char('n') if matches!(&app.mode, Mode::Selecting) => {
                         app.select_none();
                     }
-                    KeyCode::Enter | KeyCode::Char('r')
+                    KeyCode::Enter
                         if matches!(&app.mode, Mode::Selecting | Mode::Done) =>
                     {
                         app.start_running();
+                    }
+                    KeyCode::Char('r') if matches!(&app.mode, Mode::Done) => {
+                        app.reset_to_selecting();
                     }
                     KeyCode::PageUp => app.output_scroll_up(),
                     KeyCode::PageDown => app.output_scroll_down(),

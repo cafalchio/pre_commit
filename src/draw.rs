@@ -33,14 +33,11 @@ pub fn draw(f: &mut Frame, app: &mut App) {
         Mode::Running { .. } => "Running…",
         Mode::Done => "Done",
     };
-    let venv_label = match &app.venv {
-        Some(v) => format!("  venv: {}", v.display()),
-        None => String::new(),
-    };
     let title_text = format!(
-        " {}  [{}]{venv_label} ",
+        " {}  [{}]  branch: {} ",
         app.repo_root.display(),
         state_label,
+        app.current_branch,
     );
     f.render_widget(
         Paragraph::new(title_text).block(
@@ -237,7 +234,7 @@ pub fn draw(f: &mut Frame, app: &mut App) {
     if let Mode::Done = &app.mode {
         let (passed, failed, skipped, advisory) = app.summary_counts();
         let summary = format!(
-            " Done — OK: {passed}  FAIL: {failed}  WARN: {advisory}  SKIP: {skipped}  | r: run again | q: quit "
+            " Done — OK: {passed}  FAIL: {failed}  WARN: {advisory}  SKIP: {skipped}  | r: back to select | Enter: run again | q: quit "
         );
         let color = if failed > 0 {
             Color::Red
@@ -298,11 +295,14 @@ pub fn draw(f: &mut Frame, app: &mut App) {
 // ---------------------------------------------------------------------------
 
 pub fn draw_setup(f: &mut Frame, app: &App, area: Rect) {
+    // Log panel height: show if there's log output (checkout errors), min 0 max 8
+    let log_height = if app.setup_log.is_empty() { 0u16 } else { 8u16 };
+
     let vert = Layout::default()
         .direction(Direction::Vertical)
         .constraints([
-            Constraint::Percentage(20),
-            Constraint::Length(16),
+            Constraint::Percentage(15),
+            Constraint::Length(14 + log_height),
             Constraint::Min(0),
         ])
         .split(area);
@@ -310,7 +310,7 @@ pub fn draw_setup(f: &mut Frame, app: &App, area: Rect) {
         .direction(Direction::Horizontal)
         .constraints([
             Constraint::Percentage(10),
-            Constraint::Min(40),
+            Constraint::Min(50),
             Constraint::Percentage(10),
         ])
         .split(vert[1]);
@@ -324,75 +324,116 @@ pub fn draw_setup(f: &mut Frame, app: &App, area: Rect) {
         form_area,
     );
 
+    // Layout inside the form:
+    // [0] repo label  [1] repo input  [2] blank
+    // [3] branch label  [4] branch input  [5] current-branch info
+    // [6] error line  [7] hint
+    // [8] log panel (only when log_height > 0)
+    let mut constraints = vec![
+        Constraint::Length(1), // repo label
+        Constraint::Length(3), // repo input
+        Constraint::Length(1), // blank
+        Constraint::Length(1), // branch label
+        Constraint::Length(3), // branch input
+        Constraint::Length(1), // current branch info
+        Constraint::Length(1), // error
+        Constraint::Length(1), // hint
+    ];
+    if log_height > 0 {
+        constraints.push(Constraint::Length(log_height));
+    }
+
     let inner = Layout::default()
         .direction(Direction::Vertical)
-        .constraints([
-            Constraint::Length(1), // "Project path:" label
-            Constraint::Length(3), // repo input box
-            Constraint::Length(1), // blank
-            Constraint::Length(1), // "Python venv:" label
-            Constraint::Length(3), // venv input box
-            Constraint::Length(1), // error
-            Constraint::Length(1), // hint
-        ])
+        .constraints(constraints)
         .margin(1)
         .split(form_area);
 
+    // ── Repo field ────────────────────────────────────────────────────────────
     f.render_widget(
         Paragraph::new("Project path (required):")
             .style(Style::default().add_modifier(Modifier::BOLD)),
         inner[0],
     );
-
-    let repo_content = format!("{}\u{2588}", app.setup_repo);
     let repo_style = if app.setup_focus == 0 {
         Style::default().fg(Color::Yellow)
     } else {
         Style::default().fg(Color::DarkGray)
     };
+    let repo_text = if app.setup_focus == 0 {
+        format!("{}\u{2588}", app.setup_repo)
+    } else {
+        app.setup_repo.clone()
+    };
     f.render_widget(
-        Paragraph::new(if app.setup_focus == 0 {
-            repo_content
-        } else {
-            app.setup_repo.clone()
-        })
-        .block(Block::default().borders(Borders::ALL).style(repo_style)),
+        Paragraph::new(repo_text)
+            .block(Block::default().borders(Borders::ALL).style(repo_style)),
         inner[1],
     );
 
+    // ── Branch / PR field ─────────────────────────────────────────────────────
     f.render_widget(
-        Paragraph::new("Python venv path (optional):")
+        Paragraph::new("Branch or PR number (optional — leave blank to stay on current):")
             .style(Style::default().add_modifier(Modifier::BOLD)),
         inner[3],
     );
-
-    let venv_content = format!("{}\u{2588}", app.setup_venv);
-    let venv_style = if app.setup_focus == 1 {
+    let branch_style = if app.setup_focus == 1 {
         Style::default().fg(Color::Yellow)
     } else {
         Style::default().fg(Color::DarkGray)
     };
+    let branch_text = if app.setup_focus == 1 {
+        format!("{}\u{2588}", app.setup_branch)
+    } else {
+        app.setup_branch.clone()
+    };
     f.render_widget(
-        Paragraph::new(if app.setup_focus == 1 {
-            venv_content
-        } else {
-            app.setup_venv.clone()
-        })
-        .block(Block::default().borders(Borders::ALL).style(venv_style)),
+        Paragraph::new(branch_text)
+            .block(Block::default().borders(Borders::ALL).style(branch_style)),
         inner[4],
     );
 
+    // ── Current branch info ───────────────────────────────────────────────────
+    f.render_widget(
+        Paragraph::new(format!("  Current branch: {}", app.current_branch))
+            .style(Style::default().fg(Color::Cyan)),
+        inner[5],
+    );
+
+    // ── Error line ────────────────────────────────────────────────────────────
     if let Some(err) = &app.setup_error {
         f.render_widget(
             Paragraph::new(format!("  ✗ {err}"))
                 .style(Style::default().fg(Color::Red).add_modifier(Modifier::BOLD)),
-            inner[5],
+            inner[6],
         );
     }
 
+    // ── Hint ──────────────────────────────────────────────────────────────────
     f.render_widget(
-        Paragraph::new("  Tab/↑↓: switch field   Enter: confirm   Esc/q: quit")
+        Paragraph::new("  Tab/↑↓: switch field   Enter: confirm   Esc: quit")
             .style(Style::default().fg(Color::DarkGray)),
-        inner[6],
+        inner[7],
     );
+
+    // ── Checkout log (shown on error) ─────────────────────────────────────────
+    if log_height > 0 {
+        let log_text = app.setup_log.join("\n");
+        let log_style = if app.setup_error.is_some() {
+            Style::default().fg(Color::Red)
+        } else {
+            Style::default().fg(Color::DarkGray)
+        };
+        f.render_widget(
+            Paragraph::new(log_text)
+                .block(
+                    Block::default()
+                        .borders(Borders::ALL)
+                        .title(" Checkout Output ")
+                        .style(log_style),
+                )
+                .wrap(Wrap { trim: false }),
+            inner[8],
+        );
+    }
 }

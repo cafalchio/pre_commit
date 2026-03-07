@@ -36,7 +36,7 @@ pub enum Mode {
 #[derive(Clone)]
 pub enum ListEntry {
     GroupHeader(Group),
-    Check(usize), // index into App::checks
+    Check(usize),
 }
 
 pub enum RunMsg {
@@ -61,12 +61,13 @@ pub struct App {
     pub list_area: Option<Rect>,
     pub run_rx: Option<mpsc::Receiver<RunMsg>>,
     pub repo_root: PathBuf,
-    pub venv: Option<PathBuf>,
-    // Setup form fields
+    // Setup form
     pub setup_repo: String,
-    pub setup_venv: String,
+    pub setup_branch: String,  // branch name or PR number
     pub setup_focus: usize,
     pub setup_error: Option<String>,
+    pub setup_log: Vec<String>, // checkout output shown on error
+    pub current_branch: String, // displayed in setup form
 }
 
 impl App {
@@ -77,8 +78,7 @@ impl App {
         let mut list_state = ListState::default();
         list_state.select(Some(0));
 
-        // Pre-fill setup fields: CLI args override saved config.
-        let (saved_repo, saved_venv) = crate::config::load_saved_config();
+        let (saved_repo, saved_branch) = crate::config::load_saved_config();
         let setup_repo = if config.repo != std::env::current_dir().unwrap_or_default() {
             config.repo.to_string_lossy().to_string()
         } else if !saved_repo.is_empty() {
@@ -86,11 +86,9 @@ impl App {
         } else {
             config.repo.to_string_lossy().to_string()
         };
-        let setup_venv = config
-            .venv
-            .as_ref()
-            .map(|v| v.to_string_lossy().to_string())
-            .unwrap_or(saved_venv);
+        let setup_branch = config.branch.unwrap_or(saved_branch);
+
+        let current_branch = detect_current_branch(&PathBuf::from(&setup_repo));
 
         App {
             selected: vec![true; n],
@@ -105,42 +103,46 @@ impl App {
             list_area: None,
             run_rx: None,
             repo_root: config.repo,
-            venv: config.venv,
             setup_repo,
-            setup_venv,
+            setup_branch,
             setup_focus: 0,
             setup_error: None,
+            setup_log: Vec::new(),
+            current_branch,
         }
     }
 
     // ── Setup ────────────────────────────────────────────────────────────────
 
-    /// Validate the setup fields, save config, and transition to Selecting.
     pub fn confirm_setup(&mut self) {
         let repo = PathBuf::from(self.setup_repo.trim());
         if !repo.is_dir() {
             self.setup_error = Some(format!("path does not exist: {}", repo.display()));
+            self.setup_log.clear();
             return;
         }
-        let venv = if self.setup_venv.trim().is_empty() {
-            None
-        } else {
-            let v = PathBuf::from(self.setup_venv.trim());
-            if !v.is_dir() {
-                self.setup_error = Some(format!("venv path does not exist: {}", v.display()));
-                return;
-            }
-            Some(v)
-        };
 
-        // Persist so the form is pre-filled next time.
-        save_config(
-            self.setup_repo.trim(),
-            venv.as_ref().map(|v| v.to_str().unwrap_or("")).unwrap_or(""),
-        );
+        // Branch / PR checkout
+        let branch_input = self.setup_branch.trim().to_string();
+        if !branch_input.is_empty() {
+            match checkout_branch_or_pr(&repo, &branch_input) {
+                Ok(log) => {
+                    self.setup_log = log;
+                    self.current_branch = detect_current_branch(&repo);
+                }
+                Err((log, msg)) => {
+                    self.setup_error = Some(msg);
+                    self.setup_log = log;
+                    return;
+                }
+            }
+        } else {
+            self.current_branch = detect_current_branch(&repo);
+        }
+
+        save_config(self.setup_repo.trim(), self.setup_branch.trim());
 
         self.repo_root = repo;
-        self.venv = venv;
         self.staged_files = get_staged_files(&self.repo_root);
         self.setup_error = None;
         self.mode = Mode::Selecting;
@@ -149,17 +151,26 @@ impl App {
     pub fn setup_type_char(&mut self, c: char) {
         match self.setup_focus {
             0 => self.setup_repo.push(c),
-            _ => self.setup_venv.push(c),
+            _ => self.setup_branch.push(c),
         }
         self.setup_error = None;
+        self.setup_log.clear();
+        // Update current_branch preview as repo path is typed
+        if self.setup_focus == 0 {
+            self.current_branch = detect_current_branch(&PathBuf::from(self.setup_repo.trim()));
+        }
     }
 
     pub fn setup_backspace(&mut self) {
         match self.setup_focus {
             0 => { self.setup_repo.pop(); }
-            _ => { self.setup_venv.pop(); }
+            _ => { self.setup_branch.pop(); }
         }
         self.setup_error = None;
+        self.setup_log.clear();
+        if self.setup_focus == 0 {
+            self.current_branch = detect_current_branch(&PathBuf::from(self.setup_repo.trim()));
+        }
     }
 
     // ── Group helpers ────────────────────────────────────────────────────────
@@ -245,13 +256,25 @@ impl App {
 
     // ── Running ──────────────────────────────────────────────────────────────
 
+    /// Go back to the selection screen, resetting all statuses and output.
+    pub fn reset_to_selecting(&mut self) {
+        for s in &mut self.statuses {
+            *s = CheckStatus::Pending;
+        }
+        self.output_lines.clear();
+        self.output_scroll = 0;
+        self.run_rx = None;
+        self.mode = Mode::Selecting;
+    }
+
     pub fn start_running(&mut self) {
         for s in &mut self.statuses {
             *s = CheckStatus::Pending;
         }
         self.output_lines.clear();
         self.output_lines.push(format!(
-            "Staged files: {}",
+            "Branch: {}  |  Staged: {}",
+            self.current_branch,
             if self.staged_files.is_empty() {
                 "(none)".to_string()
             } else {
@@ -279,7 +302,7 @@ impl App {
             if self.run_rx.is_none() {
                 self.spawn_or_skip(idx);
                 if self.run_rx.is_none() {
-                    continue; // was a skip, advance immediately
+                    continue;
                 }
             }
             self.poll_rx(idx);
@@ -308,7 +331,6 @@ impl App {
         self.run_rx = Some(rx);
 
         let repo_root = self.repo_root.clone();
-        let venv = self.venv.clone();
 
         thread::spawn(move || {
             let (prog, args) = cmd.split_first().expect("empty cmd");
@@ -320,14 +342,6 @@ impl App {
                 .current_dir(&repo_root)
                 .stdout(Stdio::piped())
                 .stderr(Stdio::piped());
-
-            if let Some(ref v) = venv {
-                let venv_bin = v.join("bin");
-                let base_path = std::env::var("PATH").unwrap_or_default();
-                command
-                    .env("VIRTUAL_ENV", v)
-                    .env("PATH", format!("{}:{base_path}", venv_bin.display()));
-            }
 
             let mut child = match command.spawn() {
                 Ok(c) => c,
@@ -393,16 +407,13 @@ impl App {
             let check_name = self.checks[idx].name;
             let check_advisory = self.checks[idx].advisory;
             self.statuses[idx] = if success {
-                self.output_lines
-                    .push(format!("└─ [+] OK    {check_name}  ({elapsed:.1}s)"));
+                self.output_lines.push(format!("└─ [+] OK    {check_name}  ({elapsed:.1}s)"));
                 CheckStatus::Passed(elapsed)
             } else if check_advisory {
-                self.output_lines
-                    .push(format!("└─ [!] WARN  {check_name}  ({elapsed:.1}s)"));
+                self.output_lines.push(format!("└─ [!] WARN  {check_name}  ({elapsed:.1}s)"));
                 CheckStatus::Advisory(elapsed)
             } else {
-                self.output_lines
-                    .push(format!("└─ [x] FAIL  {check_name}  ({elapsed:.1}s)"));
+                self.output_lines.push(format!("└─ [x] FAIL  {check_name}  ({elapsed:.1}s)"));
                 CheckStatus::Failed(elapsed)
             };
             self.output_lines.push(String::new());
@@ -464,4 +475,61 @@ pub fn get_staged_files(repo: &PathBuf) -> Vec<String> {
                 .collect()
         })
         .unwrap_or_default()
+}
+
+/// Returns the current git branch name, or "?" if it can't be determined.
+pub fn detect_current_branch(repo: &PathBuf) -> String {
+    if !repo.is_dir() {
+        return String::from("?");
+    }
+    Command::new("git")
+        .args(["rev-parse", "--abbrev-ref", "HEAD"])
+        .current_dir(repo)
+        .output()
+        .ok()
+        .map(|o| String::from_utf8_lossy(&o.stdout).trim().to_string())
+        .filter(|s| !s.is_empty())
+        .unwrap_or_else(|| "?".to_string())
+}
+
+/// Checkout a branch name or PR number.
+/// Returns `Ok(log_lines)` on success or `Err((log_lines, error_msg))` on failure.
+pub fn checkout_branch_or_pr(
+    repo: &PathBuf,
+    branch_or_pr: &str,
+) -> Result<Vec<String>, (Vec<String>, String)> {
+    // If already on this branch (and it's not a PR number), skip.
+    let is_pr = branch_or_pr.chars().all(|c| c.is_ascii_digit());
+    if !is_pr {
+        let current = detect_current_branch(repo);
+        if current == branch_or_pr {
+            return Ok(vec![format!("Already on branch '{branch_or_pr}'")]);
+        }
+    }
+
+    let (prog, args): (&str, Vec<&str>) = if is_pr {
+        ("gh", vec!["pr", "checkout", branch_or_pr])
+    } else {
+        ("git", vec!["checkout", branch_or_pr])
+    };
+
+    let output = Command::new(prog)
+        .args(&args)
+        .current_dir(repo)
+        .output()
+        .map_err(|e| (vec![], format!("failed to run '{prog}': {e}")))?;
+
+    let log: Vec<String> = String::from_utf8_lossy(&output.stdout)
+        .lines()
+        .chain(String::from_utf8_lossy(&output.stderr).lines())
+        .map(str::to_string)
+        .filter(|l| !l.is_empty())
+        .collect();
+
+    if output.status.success() {
+        Ok(log)
+    } else {
+        let code = output.status.code().unwrap_or(-1);
+        Err((log, format!("'{prog} checkout' failed (exit {code})")))
+    }
 }

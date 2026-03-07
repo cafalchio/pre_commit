@@ -7,7 +7,7 @@ use crate::checks::all_checks;
 
 /// Run a single named check in headless (non-TUI) mode and exit.
 /// All output goes to stdout; exits with code 1 on failure, 2 on error.
-pub fn run_headless(check_name: &str, repo: &PathBuf, venv: &Option<PathBuf>) {
+pub fn run_headless(check_name: &str, repo: &PathBuf) {
     let checks = all_checks();
     let check = checks.iter().find(|c| c.name == check_name).unwrap_or_else(|| {
         eprintln!("error: unknown check '{check_name}'");
@@ -26,24 +26,16 @@ pub fn run_headless(check_name: &str, repo: &PathBuf, venv: &Option<PathBuf>) {
     let (prog, args) = check.cmd.split_first().expect("empty cmd");
     let start = std::time::Instant::now();
 
-    let mut command = Command::new(prog);
-    command
+    let mut child = Command::new(prog)
         .args(args)
         .current_dir(repo)
         .stdout(Stdio::piped())
-        .stderr(Stdio::piped());
-    if let Some(v) = venv {
-        let venv_bin = v.join("bin");
-        let base = std::env::var("PATH").unwrap_or_default();
-        command
-            .env("VIRTUAL_ENV", v)
-            .env("PATH", format!("{}:{base}", venv_bin.display()));
-    }
-
-    let mut child = command.spawn().unwrap_or_else(|e| {
-        println!("spawn error: {e}");
-        std::process::exit(2);
-    });
+        .stderr(Stdio::piped())
+        .spawn()
+        .unwrap_or_else(|e| {
+            println!("spawn error: {e}");
+            std::process::exit(2);
+        });
 
     let stdout = child.stdout.take().unwrap();
     let stderr = child.stderr.take().unwrap();
