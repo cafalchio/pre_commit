@@ -33,8 +33,8 @@ pub fn draw(f: &mut Frame, app: &mut App) {
         Mode::Running { .. } => "Running…",
         Mode::Done => "Done",
     };
-    let cpu_color = if app.cpu_pct > 80.0 { Color::Red } else if app.cpu_pct > 50.0 { Color::Yellow } else { Color::Green };
-    let mem_color = if app.mem_pct > 80.0 { Color::Red } else if app.mem_pct > 60.0 { Color::Yellow } else { Color::Green };
+    let cpu_color = if app.cpu_pct > 90.0 { Color::Red } else if app.cpu_pct > 70.0 { Color::Yellow } else { Color::Cyan };
+    let mem_color = if app.mem_pct > 90.0 { Color::Red } else if app.mem_pct > 70.0 { Color::Yellow } else { Color::Cyan };
     let left  = format!(" {}  [{}]  branch: {} ", app.repo_root.display(), state_label, app.current_branch);
     let right_cpu = format!("CPU:{:3.0}% ", app.cpu_pct);
     let right_mem = format!("MEM:{:3.0}% ", app.mem_pct);
@@ -93,44 +93,49 @@ pub fn draw(f: &mut Frame, app: &mut App) {
                     Style::default().fg(Color::DarkGray)
                 };
 
-                let (icon, icon_style, name_style, elapsed_str) = match &app.statuses[ci] {
+                let (icon, icon_style, name_style, elapsed_str, elapsed_style) = match &app.statuses[ci] {
                     CheckStatus::Pending => {
                         let s = if running_check_idx == Some(ci) {
                             Style::default().fg(Color::Cyan).add_modifier(Modifier::BOLD)
                         } else {
                             Style::default()
                         };
-                        ("   ", s, s, String::new())
+                        ("   ", s, s, String::new(), Style::default().fg(Color::DarkGray))
                     }
                     CheckStatus::Running => (
                         ">> ",
                         Style::default().fg(Color::Cyan).add_modifier(Modifier::BOLD),
                         Style::default().fg(Color::Cyan).add_modifier(Modifier::BOLD),
                         String::new(),
+                        Style::default().fg(Color::DarkGray),
                     ),
                     CheckStatus::Passed(t) => (
                         "✓  ",
                         Style::default().fg(Color::Green).add_modifier(Modifier::BOLD),
                         Style::default().fg(Color::Green),
                         format!(" {t:.1}s"),
+                        Style::default().fg(Color::Green),
                     ),
                     CheckStatus::Failed(t) => (
                         "✗  ",
                         Style::default().fg(Color::Red).add_modifier(Modifier::BOLD),
                         Style::default().fg(Color::Red).add_modifier(Modifier::BOLD),
                         format!(" {t:.1}s"),
+                        Style::default().fg(Color::Red),
                     ),
                     CheckStatus::Skipped => (
                         "---",
                         Style::default().fg(Color::DarkGray),
                         Style::default().fg(Color::DarkGray),
                         String::new(),
+                        Style::default().fg(Color::DarkGray),
                     ),
                     CheckStatus::Advisory(t) => (
                         "⚠  ",
                         Style::default().fg(Color::Yellow).add_modifier(Modifier::BOLD),
                         Style::default().fg(Color::Yellow),
                         format!(" {t:.1}s"),
+                        Style::default().fg(Color::Yellow),
                     ),
                 };
 
@@ -140,7 +145,7 @@ pub fn draw(f: &mut Frame, app: &mut App) {
                     Span::styled(icon, icon_style),
                     Span::raw(" "),
                     Span::styled(check.name.clone(), name_style),
-                    Span::styled(elapsed_str, Style::default().fg(Color::DarkGray)),
+                    Span::styled(elapsed_str, elapsed_style),
                 ]))
             }
         }
