@@ -1,4 +1,5 @@
 {
+  "project_root": "/home/cafalchio/mcp-context-forge",
   "python": [
     {
       "name": "ruff:mcpgateway",

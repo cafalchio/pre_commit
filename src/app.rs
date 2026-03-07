@@ -9,7 +9,7 @@ use std::time::{Duration, Instant};
 use ratatui::layout::Rect;
 use ratatui::widgets::ListState;
 
-use crate::checks::{all_checks, CheckDef, Group};
+use crate::checks::{load_checks_config, CheckDef, Group};
 use crate::config::{save_config, Config};
 
 // ---------------------------------------------------------------------------
@@ -75,17 +75,22 @@ pub struct App {
 
 impl App {
     pub fn new(config: Config) -> Self {
-        let checks = all_checks();
+        let checks_config = load_checks_config();
+        let checks = checks_config.checks;
         let n = checks.len();
         let entries = build_entries(&checks);
         let mut list_state = ListState::default();
         list_state.select(Some(0));
 
         let (saved_repo, saved_branch) = crate::config::load_saved_config();
-        let setup_repo = if config.repo != std::env::current_dir().unwrap_or_default() {
+        let cwd = std::env::current_dir().unwrap_or_default();
+        let setup_repo = if config.repo != cwd {
+            // explicit --repo flag takes highest priority
             config.repo.to_string_lossy().to_string()
         } else if !saved_repo.is_empty() {
             saved_repo
+        } else if let Some(root) = checks_config.project_root {
+            root
         } else {
             config.repo.to_string_lossy().to_string()
         };

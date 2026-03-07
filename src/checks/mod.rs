@@ -68,7 +68,9 @@ struct CheckDefJson {
 }
 
 #[derive(Deserialize)]
-struct ChecksJson {
+struct ChecksConfigJson {
+    #[serde(default)]
+    project_root: Option<String>,
     python: Vec<CheckDefJson>,
     rust: Vec<CheckDefJson>,
     ui: Vec<CheckDefJson>,
@@ -76,10 +78,19 @@ struct ChecksJson {
     all: Vec<CheckDefJson>,
 }
 
-/// Returns all checks in group order: Python → Rust → UI → Integration → All.
-pub fn all_checks() -> Vec<CheckDef> {
-    const JSON: &str = include_str!("checks.json");
-    let data: ChecksJson = serde_json::from_str(JSON).expect("invalid checks.json");
+// ---------------------------------------------------------------------------
+// Public API
+// ---------------------------------------------------------------------------
+
+pub struct ChecksConfig {
+    pub project_root: Option<String>,
+    pub checks: Vec<CheckDef>,
+}
+
+/// Parse `checks_config.json` (embedded at compile time) into checks + project root.
+pub fn load_checks_config() -> ChecksConfig {
+    const JSON: &str = include_str!("checks_config.json");
+    let data: ChecksConfigJson = serde_json::from_str(JSON).expect("invalid checks_config.json");
 
     let sections: [(Vec<CheckDefJson>, Group); 5] = [
         (data.python, Group::Python),
@@ -102,7 +113,13 @@ pub fn all_checks() -> Vec<CheckDef> {
             });
         }
     }
-    checks
+
+    ChecksConfig { project_root: data.project_root, checks }
+}
+
+/// Returns all checks in group order: Python → Rust → UI → Integration → All.
+pub fn all_checks() -> Vec<CheckDef> {
+    load_checks_config().checks
 }
 
 #[cfg(test)]
