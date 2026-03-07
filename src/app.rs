@@ -325,8 +325,8 @@ impl App {
 
     fn spawn_or_skip(&mut self, idx: usize) {
         let selected = self.selected[idx];
-        let check_name = self.checks[idx].name;
-        let cmd: Vec<&'static str> = self.checks[idx].cmd.clone();
+        let check_name = self.checks[idx].name.clone();
+        let cmd = self.checks[idx].cmd.clone();
 
         if !selected {
             self.statuses[idx] = CheckStatus::Skipped;
@@ -433,7 +433,7 @@ impl App {
 
         if let Some((success, elapsed)) = done {
             self.run_rx = None;
-            let check_name = self.checks[idx].name;
+            let check_name = self.checks[idx].name.clone();
             let check_advisory = self.checks[idx].advisory;
             self.statuses[idx] = if success {
                 self.output_lines.push(format!("└─ [+] OK    {check_name}  ({elapsed:.1}s)"));
@@ -519,6 +519,192 @@ pub fn detect_current_branch(repo: &PathBuf) -> String {
         .map(|o| String::from_utf8_lossy(&o.stdout).trim().to_string())
         .filter(|s| !s.is_empty())
         .unwrap_or_else(|| "?".to_string())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::checks::{all_checks, Group};
+
+    fn make_app() -> App {
+        let checks = all_checks();
+        let n = checks.len();
+        let entries = build_entries(&checks);
+        let mut list_state = ListState::default();
+        list_state.select(Some(0));
+        App {
+            selected: vec![true; n],
+            statuses: vec![CheckStatus::Pending; n],
+            entries,
+            checks,
+            list_state,
+            output_lines: Vec::new(),
+            output_scroll: 0,
+            mode: Mode::Selecting,
+            staged_files: Vec::new(),
+            list_area: None,
+            run_rx: None,
+            cancel_flag: None,
+            repo_root: PathBuf::from("/tmp"),
+            mouse_capture: false,
+            setup_repo: String::new(),
+            setup_branch: String::new(),
+            setup_focus: 0,
+            setup_error: None,
+            setup_log: Vec::new(),
+            current_branch: "main".to_string(),
+        }
+    }
+
+    #[test]
+    fn build_entries_starts_with_group_header() {
+        let checks = all_checks();
+        let entries = build_entries(&checks);
+        assert!(matches!(entries[0], ListEntry::GroupHeader(_)));
+    }
+
+    #[test]
+    fn build_entries_has_entry_for_every_check() {
+        let checks = all_checks();
+        let n = checks.len();
+        let entries = build_entries(&checks);
+        let check_count = entries.iter().filter(|e| matches!(e, ListEntry::Check(_))).count();
+        assert_eq!(check_count, n);
+    }
+
+    #[test]
+    fn build_entries_group_headers_in_order() {
+        let checks = all_checks();
+        let entries = build_entries(&checks);
+        let headers: Vec<&str> = entries
+            .iter()
+            .filter_map(|e| if let ListEntry::GroupHeader(g) = e { Some(g.label()) } else { None })
+            .collect();
+        assert_eq!(headers, vec!["Python", "Rust", "UI", "Integration", "All"]);
+    }
+
+    #[test]
+    fn select_all_marks_everything() {
+        let mut app = make_app();
+        app.selected.iter_mut().for_each(|s| *s = false);
+        app.select_all();
+        assert!(app.selected.iter().all(|&s| s));
+    }
+
+    #[test]
+    fn select_none_clears_everything() {
+        let mut app = make_app();
+        app.select_none();
+        assert!(app.selected.iter().all(|&s| !s));
+    }
+
+    #[test]
+    fn summary_counts_pending_not_counted() {
+        let app = make_app();
+        let (passed, failed, skipped, advisory) = app.summary_counts();
+        assert_eq!((passed, failed, skipped, advisory), (0, 0, 0, 0));
+    }
+
+    #[test]
+    fn summary_counts_mixed_statuses() {
+        let mut app = make_app();
+        app.statuses[0] = CheckStatus::Passed(1.0);
+        app.statuses[1] = CheckStatus::Failed(2.0);
+        app.statuses[2] = CheckStatus::Skipped;
+        app.statuses[3] = CheckStatus::Advisory(0.5);
+        let (passed, failed, skipped, advisory) = app.summary_counts();
+        assert_eq!(passed, 1);
+        assert_eq!(failed, 1);
+        assert_eq!(skipped, 1);
+        assert_eq!(advisory, 1);
+    }
+
+    #[test]
+    fn move_up_does_not_go_below_zero() {
+        let mut app = make_app();
+        app.list_state.select(Some(0));
+        app.move_up();
+        assert_eq!(app.list_state.selected(), Some(0));
+    }
+
+    #[test]
+    fn move_down_does_not_exceed_entries() {
+        let mut app = make_app();
+        let last = app.entries.len() - 1;
+        app.list_state.select(Some(last));
+        app.move_down();
+        assert_eq!(app.list_state.selected(), Some(last));
+    }
+
+    #[test]
+    fn move_up_and_down_navigate() {
+        let mut app = make_app();
+        app.list_state.select(Some(2));
+        app.move_up();
+        assert_eq!(app.list_state.selected(), Some(1));
+        app.move_down();
+        assert_eq!(app.list_state.selected(), Some(2));
+    }
+
+    #[test]
+    fn output_scroll_up_stops_at_zero() {
+        let mut app = make_app();
+        app.output_scroll = 0;
+        app.output_scroll_up();
+        assert_eq!(app.output_scroll, 0);
+    }
+
+    #[test]
+    fn output_scroll_down_bounded_by_lines() {
+        let mut app = make_app();
+        app.output_lines = vec!["a".to_string(), "b".to_string(), "c".to_string()];
+        app.output_scroll = 0;
+        app.output_scroll_down();
+        // max is len - 1 = 2, scroll increases by 3 but capped
+        assert!(app.output_scroll <= app.output_lines.len().saturating_sub(1));
+    }
+
+    #[test]
+    fn group_state_counts_correctly() {
+        let mut app = make_app();
+        let python_indices: Vec<usize> = app.checks.iter().enumerate()
+            .filter(|(_, c)| c.group == Group::Python)
+            .map(|(i, _)| i)
+            .collect();
+        // deselect all python checks
+        for i in &python_indices {
+            app.selected[*i] = false;
+        }
+        let (sel, tot) = app.group_state(Group::Python);
+        assert_eq!(sel, 0);
+        assert_eq!(tot, python_indices.len());
+    }
+
+    #[test]
+    fn toggle_group_selects_all_when_partial() {
+        let mut app = make_app();
+        // deselect first python check to make it partial
+        let first_python = app.checks.iter().position(|c| c.group == Group::Python).unwrap();
+        app.selected[first_python] = false;
+        app.toggle_group(Group::Python);
+        let (sel, tot) = app.group_state(Group::Python);
+        assert_eq!(sel, tot, "all python checks should be selected after toggle");
+    }
+
+    #[test]
+    fn toggle_group_deselects_all_when_fully_selected() {
+        let mut app = make_app();
+        // all selected by default; toggle should deselect all
+        app.toggle_group(Group::Python);
+        let (sel, _) = app.group_state(Group::Python);
+        assert_eq!(sel, 0, "all python checks should be deselected after toggle");
+    }
+
+    #[test]
+    fn detect_current_branch_returns_question_mark_for_nondir() {
+        let result = detect_current_branch(&PathBuf::from("/nonexistent/path/xyz"));
+        assert_eq!(result, "?");
+    }
 }
 
 /// Checkout a branch name or PR number.

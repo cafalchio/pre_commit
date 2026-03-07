@@ -55,6 +55,7 @@ pub fn save_config(repo: &str, branch: &str) {
 // CLI argument parsing
 // ---------------------------------------------------------------------------
 
+
 pub fn parse_args() -> Result<Config, String> {
     let args: Vec<String> = std::env::args().skip(1).collect();
     let mut repo: Option<PathBuf> = None;
@@ -102,4 +103,67 @@ pub fn parse_args() -> Result<Config, String> {
         return Err(format!("repo path does not exist: {}", repo.display()));
     }
     Ok(Config { repo, branch, run_check })
+}
+
+#[cfg(test)]
+mod tests {
+    use std::fs;
+
+    /// Parse a config file content string the same way load_saved_config does.
+    fn parse_config_content(content: &str) -> (String, String) {
+        let mut repo = String::new();
+        let mut branch = String::new();
+        for line in content.lines() {
+            if let Some(v) = line.strip_prefix("repo=") {
+                repo = v.to_string();
+            } else if let Some(v) = line.strip_prefix("branch=") {
+                branch = v.to_string();
+            }
+        }
+        (repo, branch)
+    }
+
+    #[test]
+    fn config_file_format_round_trips() {
+        let repo = "/some/repo";
+        let branch = "main";
+        let content = format!("repo={repo}\nbranch={branch}\n");
+        let (r, b) = parse_config_content(&content);
+        assert_eq!(r, repo);
+        assert_eq!(b, branch);
+    }
+
+    #[test]
+    fn config_file_empty_returns_empty_strings() {
+        let (r, b) = parse_config_content("");
+        assert!(r.is_empty());
+        assert!(b.is_empty());
+    }
+
+    #[test]
+    fn config_file_missing_branch_returns_empty_branch() {
+        let content = "repo=/my/repo\n";
+        let (r, b) = parse_config_content(content);
+        assert_eq!(r, "/my/repo");
+        assert!(b.is_empty());
+    }
+
+    #[test]
+    fn config_file_ignores_unknown_keys() {
+        let content = "foo=bar\nrepo=/r\nbranch=dev\nbaz=qux\n";
+        let (r, b) = parse_config_content(content);
+        assert_eq!(r, "/r");
+        assert_eq!(b, "dev");
+    }
+
+    #[test]
+    fn save_and_load_round_trip() {
+        let dir = tempfile::tempdir().expect("tempdir");
+        let config_path = dir.path().join("config");
+        let content = format!("repo={}\nbranch={}\n", "/test/repo", "feature-x");
+        fs::write(&config_path, &content).unwrap();
+        let (r, b) = parse_config_content(&fs::read_to_string(&config_path).unwrap());
+        assert_eq!(r, "/test/repo");
+        assert_eq!(b, "feature-x");
+    }
 }

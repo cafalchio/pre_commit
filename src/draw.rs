@@ -131,7 +131,7 @@ pub fn draw(f: &mut Frame, app: &mut App) {
                     Span::styled(format!("{cb} "), cb_style),
                     Span::styled(icon, icon_style),
                     Span::raw(" "),
-                    Span::styled(check.name, name_style),
+                    Span::styled(check.name.clone(), name_style),
                     Span::styled(elapsed_str, Style::default().fg(Color::DarkGray)),
                 ]))
             }
@@ -168,18 +168,18 @@ pub fn draw(f: &mut Frame, app: &mut App) {
             }
             Some(ListEntry::Check(ci)) => {
                 let check = &app.checks[*ci];
-                let staged_note = match check.only_when_staged {
+                let staged_note = match &check.only_when_staged {
                     Some(p) => format!("Only runs when '{p}' files are staged."),
                     None => "Runs unconditionally.".to_string(),
                 };
                 vec![
                     Line::from(vec![
                         Span::styled("Name:  ", Style::default().add_modifier(Modifier::BOLD)),
-                        Span::raw(check.name),
+                        Span::raw(check.name.clone()),
                     ]),
                     Line::from(vec![
                         Span::styled("About: ", Style::default().add_modifier(Modifier::BOLD)),
-                        Span::raw(check.description),
+                        Span::raw(check.description.clone()),
                     ]),
                     Line::from(vec![
                         Span::styled("When:  ", Style::default().add_modifier(Modifier::BOLD)),
