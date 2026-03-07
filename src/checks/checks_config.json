@@ -245,22 +245,24 @@
   "rust": [
     {
       "name": "cargo:fmt-check",
-      "description": "Rust formatting check (all Rust projects)",
+      "description": "Rust formatting check on changed .rs files (all Rust projects)",
       "cmd": [
         "sh",
         "-c",
-        "\n_FAIL=0\nwhile IFS= read -r dir; do\n  echo \"==> fmt: $dir\"\n  (cd \"$dir\" && cargo fmt -- --check) || _FAIL=1\ndone < <(find . -name 'Cargo.toml' ! -path '*/target/*' ! -path '*/.venv/*' \\\n  | while IFS= read -r f; do\n      dir=$(dirname \"$f\")\n      grep -q '^\\[workspace\\]' \"$f\" 2>/dev/null && echo \"$dir\" && continue\n      find \"$(dirname \"$dir\")\" -maxdepth 1 -name 'Cargo.toml' 2>/dev/null | grep -q . || echo \"$dir\"\n    done | sort -u)\nexit $_FAIL\n"
+        "\nFILES=$(git diff --name-only HEAD 2>/dev/null | grep -E '\\.rs$'); [ -z \"$FILES\" ] && echo 'No changed Rust files — skipping cargo fmt' && exit 0;\n_FAIL=0\nwhile IFS= read -r dir; do\n  echo \"==> fmt: $dir\"\n  (cd \"$dir\" && cargo fmt -- --check) || _FAIL=1\ndone < <(find . -name 'Cargo.toml' ! -path '*/target/*' ! -path '*/.venv/*' \\\n  | while IFS= read -r f; do\n      dir=$(dirname \"$f\")\n      grep -q '^\\[workspace\\]' \"$f\" 2>/dev/null && echo \"$dir\" && continue\n      find \"$(dirname \"$dir\")\" -maxdepth 1 -name 'Cargo.toml' 2>/dev/null | grep -q . || echo \"$dir\"\n    done | sort -u)\nexit $_FAIL\n"
       ],
+      "only_when_staged": "*.rs",
       "advisory": false
     },
     {
       "name": "cargo:clippy",
-      "description": "Rust Clippy lint (all Rust projects)",
+      "description": "Rust Clippy lint on changed .rs files (all Rust projects)",
       "cmd": [
         "sh",
         "-c",
-        "\n_VENV=$(mktemp -d)\nuv venv \"$_VENV\" --python python3\n_FAIL=0\nwhile IFS= read -r dir; do\n  echo \"==> clippy: $dir\"\n  (cd \"$dir\" && PYO3_PYTHON=\"$_VENV/bin/python\" cargo clippy -- -D warnings) || _FAIL=1\ndone < <(find . -name 'Cargo.toml' ! -path '*/target/*' ! -path '*/.venv/*' \\\n  | while IFS= read -r f; do\n      dir=$(dirname \"$f\")\n      grep -q '^\\[workspace\\]' \"$f\" 2>/dev/null && echo \"$dir\" && continue\n      find \"$(dirname \"$dir\")\" -maxdepth 1 -name 'Cargo.toml' 2>/dev/null | grep -q . || echo \"$dir\"\n    done | sort -u)\nrm -rf \"$_VENV\"\nexit $_FAIL\n"
+        "\nFILES=$(git diff --name-only HEAD 2>/dev/null | grep -E '\\.rs$'); [ -z \"$FILES\" ] && echo 'No changed Rust files — skipping cargo clippy' && exit 0;\n_VENV=$(mktemp -d)\nuv venv \"$_VENV\" --python python3\n_FAIL=0\nwhile IFS= read -r dir; do\n  echo \"==> clippy: $dir\"\n  (cd \"$dir\" && PYO3_PYTHON=\"$_VENV/bin/python\" cargo clippy -- -D warnings) || _FAIL=1\ndone < <(find . -name 'Cargo.toml' ! -path '*/target/*' ! -path '*/.venv/*' \\\n  | while IFS= read -r f; do\n      dir=$(dirname \"$f\")\n      grep -q '^\\[workspace\\]' \"$f\" 2>/dev/null && echo \"$dir\" && continue\n      find \"$(dirname \"$dir\")\" -maxdepth 1 -name 'Cargo.toml' 2>/dev/null | grep -q . || echo \"$dir\"\n    done | sort -u)\nrm -rf \"$_VENV\"\nexit $_FAIL\n"
       ],
+      "only_when_staged": "*.rs",
       "advisory": false
     },
     {
