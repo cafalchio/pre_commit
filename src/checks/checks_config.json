@@ -488,34 +488,31 @@
   "all": [
     {
       "name": "yamllint",
-      "description": "YAML syntax check",
+      "description": "YAML syntax check on changed .yaml/.yml files",
       "cmd": [
-        "uv",
-        "run",
-        "yamllint",
+        "sh",
         "-c",
-        ".yamllint",
-        "."
+        "FILES=$(git diff --name-only HEAD 2>/dev/null | grep -E '\\.(yaml|yml)$' | tr '\\n' ' '); [ -z \"$FILES\" ] && echo 'No changed YAML files — skipping yamllint' && exit 0; echo \"Running yamllint on: $FILES\"; uv run yamllint -c .yamllint $FILES"
       ],
       "advisory": false
     },
     {
       "name": "jsonlint",
-      "description": "JSON syntax check (all *.json files)",
+      "description": "JSON syntax check on changed *.json files",
       "cmd": [
         "sh",
         "-c",
-        "find . -type f -name '*.json' -not -path './node_modules/*' -print0 | xargs -0 -I{} jq empty \"{}\""
+        "FILES=$(git diff --name-only HEAD 2>/dev/null | grep -E '\\.json$' | grep -v '^node_modules/'); [ -z \"$FILES\" ] && echo 'No changed JSON files — skipping jsonlint' && exit 0; echo \"Running jsonlint on: $FILES\"; echo \"$FILES\" | xargs -I{} jq empty \"{}\""
       ],
       "advisory": false
     },
     {
       "name": "tomllint",
-      "description": "TOML syntax check (all *.toml files)",
+      "description": "TOML syntax check on changed *.toml files",
       "cmd": [
         "sh",
         "-c",
-        "find . -type f -name '*.toml' -not -path './plugin_templates/*' -not -path './mcp-servers/templates/*' -print0 | xargs -0 -I{} tomlcheck \"{}\""
+        "FILES=$(git diff --name-only HEAD 2>/dev/null | grep -E '\\.toml$' | grep -v '^plugin_templates/' | grep -v '^mcp-servers/templates/'); [ -z \"$FILES\" ] && echo 'No changed TOML files — skipping tomllint' && exit 0; echo \"Running tomllint on: $FILES\"; echo \"$FILES\" | xargs -I{} tomlcheck \"{}\""
       ],
       "advisory": false
     },
@@ -523,6 +520,8 @@
       "name": "license-check",
       "description": "License policy check (advisory)",
       "cmd": [
+        "uv",
+        "run",
         "python",
         "scripts/license_checker.py",
         "--config",

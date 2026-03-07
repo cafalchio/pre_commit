@@ -1,4 +1,5 @@
-use std::io::{BufRead, BufReader};
+use std::fs::OpenOptions;
+use std::io::{BufRead, BufReader, Write};
 use std::path::PathBuf;
 use std::process::{Command, Stdio};
 use std::sync::atomic::{AtomicBool, Ordering};
@@ -63,6 +64,7 @@ pub struct App {
     pub list_area: Option<Rect>,
     pub run_rx: Option<mpsc::Receiver<RunMsg>>,
     pub cancel_flag: Option<Arc<AtomicBool>>,
+    log_file: Option<std::fs::File>,
     pub repo_root: PathBuf,
     pub mouse_capture: bool,
     // Setup form
@@ -120,6 +122,7 @@ impl App {
             list_area: None,
             run_rx: None,
             cancel_flag: None,
+            log_file: None,
             repo_root: config.repo,
             mouse_capture: true,
             setup_repo,
@@ -294,6 +297,10 @@ impl App {
             flag.store(true, Ordering::Relaxed);
         }
         self.run_rx = None;
+        if let Some(ref mut f) = self.log_file {
+            let _ = writeln!(f, "==> Cancelled");
+        }
+        self.log_file = None;
     }
 
     /// Go back to the selection screen, resetting all statuses and output.
@@ -312,7 +319,7 @@ impl App {
             *s = CheckStatus::Pending;
         }
         self.output_lines.clear();
-        self.output_lines.push(format!(
+        let header = format!(
             "Branch: {}  |  Staged: {}",
             self.current_branch,
             if self.staged_files.is_empty() {
@@ -320,10 +327,24 @@ impl App {
             } else {
                 self.staged_files.join(", ")
             }
-        ));
+        );
+        self.output_lines.push(header.clone());
         self.output_lines.push(String::new());
         self.output_scroll = 0;
         self.run_rx = None;
+
+        let log_path = self.repo_root.join("last_run.log");
+        self.log_file = OpenOptions::new()
+            .write(true)
+            .create(true)
+            .truncate(true)
+            .open(&log_path)
+            .ok();
+        if let Some(ref mut f) = self.log_file {
+            let _ = writeln!(f, "{header}");
+            let _ = writeln!(f);
+        }
+
         self.mode = Mode::Running { idx: 0 };
     }
 
@@ -357,14 +378,23 @@ impl App {
 
         if !selected {
             self.statuses[idx] = CheckStatus::Skipped;
-            self.output_lines.push(format!("[-] SKIP  {check_name}  (not selected)"));
+            let skip_line = format!("[-] SKIP  {check_name}  (not selected)");
+            if let Some(ref mut f) = self.log_file {
+                let _ = writeln!(f, "{skip_line}");
+                let _ = writeln!(f);
+            }
+            self.output_lines.push(skip_line);
             self.output_lines.push(String::new());
             self.advance(idx);
             return;
         }
 
         self.statuses[idx] = CheckStatus::Running;
-        self.output_lines.push(format!("┌─ Running: {check_name} "));
+        let run_line = format!("┌─ Running: {check_name} ");
+        if let Some(ref mut f) = self.log_file {
+            let _ = writeln!(f, "{run_line}");
+        }
+        self.output_lines.push(run_line);
         self.output_scroll = self.output_lines.len().saturating_sub(1);
 
         let (tx, rx) = mpsc::channel::<RunMsg>();
@@ -451,7 +481,11 @@ impl App {
         for msg in messages {
             match msg {
                 RunMsg::Line(line) => {
-                    self.output_lines.push(format!("│ {line}"));
+                    let formatted = format!("│ {line}");
+                    if let Some(ref mut f) = self.log_file {
+                        let _ = writeln!(f, "{formatted}");
+                    }
+                    self.output_lines.push(formatted);
                     self.output_scroll = self.output_lines.len().saturating_sub(1);
                 }
                 RunMsg::Done { success, elapsed } => done = Some((success, elapsed)),
@@ -463,13 +497,19 @@ impl App {
             let check_name = self.checks[idx].name.clone();
             let check_advisory = self.checks[idx].advisory;
             self.statuses[idx] = if success {
-                self.output_lines.push(format!("└─ [+] OK    {check_name}  ({elapsed:.1}s)"));
+                let line = format!("└─ [+] OK    {check_name}  ({elapsed:.1}s)");
+                if let Some(ref mut f) = self.log_file { let _ = writeln!(f, "{line}"); let _ = writeln!(f); }
+                self.output_lines.push(line);
                 CheckStatus::Passed(elapsed)
             } else if check_advisory {
-                self.output_lines.push(format!("└─ [!] WARN  {check_name}  ({elapsed:.1}s)"));
+                let line = format!("└─ [!] WARN  {check_name}  ({elapsed:.1}s)");
+                if let Some(ref mut f) = self.log_file { let _ = writeln!(f, "{line}"); let _ = writeln!(f); }
+                self.output_lines.push(line);
                 CheckStatus::Advisory(elapsed)
             } else {
-                self.output_lines.push(format!("└─ [x] FAIL  {check_name}  ({elapsed:.1}s)"));
+                let line = format!("└─ [x] FAIL  {check_name}  ({elapsed:.1}s)");
+                if let Some(ref mut f) = self.log_file { let _ = writeln!(f, "{line}"); let _ = writeln!(f); }
+                self.output_lines.push(line);
                 CheckStatus::Failed(elapsed)
             };
             self.output_lines.push(String::new());
@@ -481,6 +521,7 @@ impl App {
     fn advance(&mut self, idx: usize) {
         let next = idx + 1;
         self.mode = if next >= self.checks.len() {
+            self.log_file = None; // flush + close
             Mode::Done
         } else {
             Mode::Running { idx: next }
@@ -572,7 +613,8 @@ mod tests {
             list_area: None,
             run_rx: None,
             cancel_flag: None,
-            repo_root: PathBuf::from("/tmp"),
+            log_file: None,
+            repo_root: PathBuf::from("./"),
             mouse_capture: false,
             setup_repo: String::new(),
             setup_branch: String::new(),
