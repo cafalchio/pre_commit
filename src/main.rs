@@ -43,6 +43,7 @@ fn main() -> io::Result<()> {
     let mut app = App::new(config);
 
     loop {
+        app.refresh_sys_stats();
         terminal.draw(|f| draw(f, &mut app))?;
 
         if let Mode::Running { .. } = &app.mode {

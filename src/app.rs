@@ -8,6 +8,7 @@ use std::time::{Duration, Instant};
 
 use ratatui::layout::Rect;
 use ratatui::widgets::ListState;
+use sysinfo::System;
 
 use crate::checks::{load_checks_config, CheckDef, Group};
 use crate::config::{save_config, Config};
@@ -71,6 +72,10 @@ pub struct App {
     pub setup_error: Option<String>,
     pub setup_log: Vec<String>, // checkout output shown on error
     pub current_branch: String, // displayed in setup form
+    // System stats
+    pub cpu_pct: f32,
+    pub mem_pct: f32,
+    sys: System,
 }
 
 impl App {
@@ -98,6 +103,10 @@ impl App {
 
         let current_branch = detect_current_branch(&PathBuf::from(&setup_repo));
 
+        let mut sys = System::new();
+        sys.refresh_cpu_usage();
+        sys.refresh_memory();
+
         App {
             selected: vec![true; n],
             statuses: vec![CheckStatus::Pending; n],
@@ -119,6 +128,19 @@ impl App {
             setup_error: None,
             setup_log: Vec::new(),
             current_branch,
+            cpu_pct: 0.0,
+            mem_pct: 0.0,
+            sys,
+        }
+    }
+
+    pub fn refresh_sys_stats(&mut self) {
+        self.sys.refresh_cpu_usage();
+        self.sys.refresh_memory();
+        self.cpu_pct = self.sys.global_cpu_usage();
+        let total = self.sys.total_memory();
+        if total > 0 {
+            self.mem_pct = self.sys.used_memory() as f32 / total as f32 * 100.0;
         }
     }
 
@@ -558,6 +580,9 @@ mod tests {
             setup_error: None,
             setup_log: Vec::new(),
             current_branch: "main".to_string(),
+            cpu_pct: 0.0,
+            mem_pct: 0.0,
+            sys: System::new(),
         }
     }
 

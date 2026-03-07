@@ -388,11 +388,10 @@
   "integration": [
     {
       "name": "alembic:upgrade",
-      "description": "Database migration upgrade validation (docker compose db, cleans up after)",
+      "description": "Database migration upgrade validation (SQLite + PostgreSQL, docker-managed)",
       "cmd": [
-        "sh",
-        "-c",
-        "echo '==> Starting DB via docker compose...' && docker compose up -d db && echo '==> Running upgrade validation...' && bash scripts/ci/run_upgrade_validation.sh; _EC=$?; echo '==> Cleaning up docker compose...'; docker compose down -v --remove-orphans; exit $_EC"
+        "bash",
+        "scripts/ci/run_upgrade_validation.sh"
       ],
       "advisory": false
     },

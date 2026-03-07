@@ -33,14 +33,22 @@ pub fn draw(f: &mut Frame, app: &mut App) {
         Mode::Running { .. } => "Running…",
         Mode::Done => "Done",
     };
-    let title_text = format!(
-        " {}  [{}]  branch: {} ",
-        app.repo_root.display(),
-        state_label,
-        app.current_branch,
-    );
+    let cpu_color = if app.cpu_pct > 80.0 { Color::Red } else if app.cpu_pct > 50.0 { Color::Yellow } else { Color::Green };
+    let mem_color = if app.mem_pct > 80.0 { Color::Red } else if app.mem_pct > 60.0 { Color::Yellow } else { Color::Green };
+    let left  = format!(" {}  [{}]  branch: {} ", app.repo_root.display(), state_label, app.current_branch);
+    let right_cpu = format!("CPU:{:3.0}% ", app.cpu_pct);
+    let right_mem = format!("MEM:{:3.0}% ", app.mem_pct);
+    // -2 for the left/right border chars; saturate so we never underflow
+    let inner_width = root[0].width.saturating_sub(2) as usize;
+    let pad = inner_width.saturating_sub(left.len() + right_cpu.len() + right_mem.len());
+    let title_line = Line::from(vec![
+        Span::raw(left),
+        Span::raw(" ".repeat(pad)),
+        Span::styled(right_cpu, Style::default().fg(cpu_color).add_modifier(Modifier::BOLD)),
+        Span::styled(right_mem, Style::default().fg(mem_color).add_modifier(Modifier::BOLD)),
+    ]);
     f.render_widget(
-        Paragraph::new(title_text).block(
+        Paragraph::new(title_line).block(
             Block::default()
                 .borders(Borders::ALL)
                 .style(Style::default().fg(Color::Cyan).add_modifier(Modifier::BOLD)),
