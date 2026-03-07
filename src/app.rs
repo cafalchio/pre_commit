@@ -333,7 +333,10 @@ impl App {
         self.output_scroll = 0;
         self.run_rx = None;
 
-        let log_path = self.repo_root.join("last_run.log");
+        let log_path = std::env::current_exe()
+            .ok()
+            .and_then(|p| p.parent().map(|d| d.join("last_run.log")))
+            .unwrap_or_else(|| self.repo_root.join("last_run.log"));
         self.log_file = OpenOptions::new()
             .write(true)
             .create(true)

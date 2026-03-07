@@ -7,7 +7,7 @@
       "cmd": [
         "sh",
         "-c",
-        "FILES=$(git diff --name-only HEAD 2>/dev/null | grep -E '^mcpgateway/.*\\.py$' | tr '\\n' ' '); [ -z \"$FILES\" ] && echo 'No changed Python files — skipping ruff' && exit 0; echo \"Running ruff on: $FILES\"; uv run ruff check $FILES"
+        "FILES=$(git diff --name-only HEAD 2>/dev/null | grep -E '^mcpgateway/.*\\.py$' | tr '\\n' ' '); [ -z \"$FILES\" ] && echo 'No changed Python files \u2014 skipping ruff' && exit 0; echo \"Running ruff on: $FILES\"; uv run ruff check $FILES"
       ],
       "only_when_staged": "mcpgateway/",
       "advisory": false
@@ -18,7 +18,7 @@
       "cmd": [
         "sh",
         "-c",
-        "FILES=$(git diff --name-only HEAD 2>/dev/null | grep -E '^plugins/.*\\.py$' | tr '\\n' ' '); [ -z \"$FILES\" ] && echo 'No changed Python files — skipping ruff' && exit 0; echo \"Running ruff on: $FILES\"; uv run ruff check $FILES"
+        "FILES=$(git diff --name-only HEAD 2>/dev/null | grep -E '^plugins/.*\\.py$' | tr '\\n' ' '); [ -z \"$FILES\" ] && echo 'No changed Python files \u2014 skipping ruff' && exit 0; echo \"Running ruff on: $FILES\"; uv run ruff check $FILES"
       ],
       "only_when_staged": "plugins/",
       "advisory": false
@@ -29,7 +29,7 @@
       "cmd": [
         "sh",
         "-c",
-        "FILES=$(git diff --name-only HEAD 2>/dev/null | grep -E '^(mcpgateway|plugins)/.*\\.py$' | tr '\\n' ' '); [ -z \"$FILES\" ] && echo 'No changed Python files — skipping black' && exit 0; echo \"Running black on: $FILES\"; uv run black --check $FILES"
+        "FILES=$(git diff --name-only HEAD 2>/dev/null | grep -E '^(mcpgateway|plugins)/.*\\.py$' | tr '\\n' ' '); [ -z \"$FILES\" ] && echo 'No changed Python files \u2014 skipping black' && exit 0; echo \"Running black on: $FILES\"; uv run black --check $FILES"
       ],
       "only_when_staged": "mcpgateway/",
       "advisory": false
@@ -40,7 +40,7 @@
       "cmd": [
         "sh",
         "-c",
-        "FILES=$(git diff --name-only HEAD 2>/dev/null | grep -E '^(mcpgateway|plugins)/.*\\.py$' | tr '\\n' ' '); [ -z \"$FILES\" ] && echo 'No changed Python files — skipping isort' && exit 0; echo \"Running isort on: $FILES\"; uv run isort --check --profile=black $FILES"
+        "FILES=$(git diff --name-only HEAD 2>/dev/null | grep -E '^(mcpgateway|plugins)/.*\\.py$' | tr '\\n' ' '); [ -z \"$FILES\" ] && echo 'No changed Python files \u2014 skipping isort' && exit 0; echo \"Running isort on: $FILES\"; uv run isort --check --profile=black $FILES"
       ],
       "only_when_staged": "mcpgateway/",
       "advisory": false
@@ -51,7 +51,7 @@
       "cmd": [
         "sh",
         "-c",
-        "FILES=$(git diff --name-only HEAD 2>/dev/null | grep -E '^mcpgateway/.*\\.py$' | tr '\\n' ' '); [ -z \"$FILES\" ] && echo 'No changed Python files — skipping bandit' && exit 0; echo \"Running bandit on: $FILES\"; uv run bandit $FILES -lll --confidence-level high"
+        "FILES=$(git diff --name-only HEAD 2>/dev/null | grep -E '^mcpgateway/.*\\.py$' | tr '\\n' ' '); [ -z \"$FILES\" ] && echo 'No changed Python files \u2014 skipping bandit' && exit 0; echo \"Running bandit on: $FILES\"; uv run bandit $FILES -lll --confidence-level high"
       ],
       "only_when_staged": "mcpgateway/",
       "advisory": false
@@ -62,7 +62,7 @@
       "cmd": [
         "sh",
         "-c",
-        "FILES=$(git diff --name-only HEAD 2>/dev/null | grep -E '^mcpgateway/.*\\.py$' | tr '\\n' ' '); [ -z \"$FILES\" ] && echo 'No changed Python files — skipping flake8' && exit 0; echo \"Running flake8 on: $FILES\"; uv run flake8 $FILES -v"
+        "FILES=$(git diff --name-only HEAD 2>/dev/null | grep -E '^mcpgateway/.*\\.py$' | tr '\\n' ' '); [ -z \"$FILES\" ] && echo 'No changed Python files \u2014 skipping flake8' && exit 0; echo \"Running flake8 on: $FILES\"; uv run flake8 $FILES -v"
       ],
       "only_when_staged": "mcpgateway/",
       "advisory": false
@@ -73,7 +73,7 @@
       "cmd": [
         "sh",
         "-c",
-        "FILES=$(git diff --name-only HEAD 2>/dev/null | grep -E '^plugins/.*\\.py$' | tr '\\n' ' '); [ -z \"$FILES\" ] && echo 'No changed Python files — skipping flake8' && exit 0; echo \"Running flake8 on: $FILES\"; uv run flake8 $FILES -v"
+        "FILES=$(git diff --name-only HEAD 2>/dev/null | grep -E '^plugins/.*\\.py$' | tr '\\n' ' '); [ -z \"$FILES\" ] && echo 'No changed Python files \u2014 skipping flake8' && exit 0; echo \"Running flake8 on: $FILES\"; uv run flake8 $FILES -v"
       ],
       "only_when_staged": "plugins/",
       "advisory": false
@@ -99,7 +99,7 @@
       "cmd": [
         "sh",
         "-c",
-        "FILES=$(git diff --name-only HEAD 2>/dev/null | grep -E '^mcpgateway/.*\\.py$' | tr '\\n' ' '); [ -z \"$FILES\" ] && echo 'No changed mcpgateway Python files — skipping pylint' && exit 0; echo \"Running pylint on: $FILES\"; uv run pylint $FILES --rcfile=.pylintrc.mcpgateway --fail-on E --fail-under=10"
+        "FILES=$(git diff --name-only HEAD 2>/dev/null | grep -E '^mcpgateway/.*\\.py$' | tr '\\n' ' '); [ -z \"$FILES\" ] && echo 'No changed mcpgateway Python files \u2014 skipping pylint' && exit 0; echo \"Running pylint on: $FILES\"; uv run pylint $FILES --rcfile=.pylintrc.mcpgateway --fail-on E --fail-under=10"
       ],
       "only_when_staged": "mcpgateway/",
       "advisory": false
@@ -110,7 +110,7 @@
       "cmd": [
         "sh",
         "-c",
-        "FILES=$(git diff --name-only HEAD 2>/dev/null | grep -E '^plugins/.*\\.py$' | tr '\\n' ' '); [ -z \"$FILES\" ] && echo 'No changed plugins Python files — skipping pylint' && exit 0; echo \"Running pylint on: $FILES\"; uv run pylint $FILES --rcfile=.pylintrc.plugins --fail-on E --fail-under=10"
+        "FILES=$(git diff --name-only HEAD 2>/dev/null | grep -E '^plugins/.*\\.py$' | tr '\\n' ' '); [ -z \"$FILES\" ] && echo 'No changed plugins Python files \u2014 skipping pylint' && exit 0; echo \"Running pylint on: $FILES\"; uv run pylint $FILES --rcfile=.pylintrc.plugins --fail-on E --fail-under=10"
       ],
       "only_when_staged": "plugins/",
       "advisory": false
@@ -249,7 +249,7 @@
       "cmd": [
         "sh",
         "-c",
-        "\nFILES=$(git diff --name-only HEAD 2>/dev/null | grep -E '\\.rs$'); [ -z \"$FILES\" ] && echo 'No changed Rust files — skipping cargo fmt' && exit 0;\n_FAIL=0\nwhile IFS= read -r dir; do\n  echo \"==> fmt: $dir\"\n  (cd \"$dir\" && cargo fmt -- --check) || _FAIL=1\ndone < <(find . -name 'Cargo.toml' ! -path '*/target/*' ! -path '*/.venv/*' \\\n  | while IFS= read -r f; do\n      dir=$(dirname \"$f\")\n      grep -q '^\\[workspace\\]' \"$f\" 2>/dev/null && echo \"$dir\" && continue\n      find \"$(dirname \"$dir\")\" -maxdepth 1 -name 'Cargo.toml' 2>/dev/null | grep -q . || echo \"$dir\"\n    done | sort -u)\nexit $_FAIL\n"
+        "\nFILES=$(git diff --name-only HEAD 2>/dev/null | grep -E '\\.rs$'); [ -z \"$FILES\" ] && echo 'No changed Rust files \u2014 skipping cargo fmt' && exit 0;\n_FAIL=0\nwhile IFS= read -r dir; do\n  echo \"==> fmt: $dir\"\n  (cd \"$dir\" && cargo fmt -- --check) || _FAIL=1\ndone < <(find . -name 'Cargo.toml' ! -path '*/target/*' ! -path '*/.venv/*' \\\n  | while IFS= read -r f; do\n      dir=$(dirname \"$f\")\n      grep -q '^\\[workspace\\]' \"$f\" 2>/dev/null && echo \"$dir\" && continue\n      find \"$(dirname \"$dir\")\" -maxdepth 1 -name 'Cargo.toml' 2>/dev/null | grep -q . || echo \"$dir\"\n    done | sort -u)\nexit $_FAIL\n"
       ],
       "only_when_staged": "*.rs",
       "advisory": false
@@ -260,7 +260,7 @@
       "cmd": [
         "sh",
         "-c",
-        "\nFILES=$(git diff --name-only HEAD 2>/dev/null | grep -E '\\.rs$'); [ -z \"$FILES\" ] && echo 'No changed Rust files — skipping cargo clippy' && exit 0;\n_VENV=$(mktemp -d)\nuv venv \"$_VENV\" --python python3\n_FAIL=0\nwhile IFS= read -r dir; do\n  echo \"==> clippy: $dir\"\n  (cd \"$dir\" && PYO3_PYTHON=\"$_VENV/bin/python\" cargo clippy -- -D warnings) || _FAIL=1\ndone < <(find . -name 'Cargo.toml' ! -path '*/target/*' ! -path '*/.venv/*' \\\n  | while IFS= read -r f; do\n      dir=$(dirname \"$f\")\n      grep -q '^\\[workspace\\]' \"$f\" 2>/dev/null && echo \"$dir\" && continue\n      find \"$(dirname \"$dir\")\" -maxdepth 1 -name 'Cargo.toml' 2>/dev/null | grep -q . || echo \"$dir\"\n    done | sort -u)\nrm -rf \"$_VENV\"\nexit $_FAIL\n"
+        "\nFILES=$(git diff --name-only HEAD 2>/dev/null | grep -E '\\.rs$'); [ -z \"$FILES\" ] && echo 'No changed Rust files \u2014 skipping cargo clippy' && exit 0;\n_VENV=$(mktemp -d)\nuv venv \"$_VENV\" --python python3\n_FAIL=0\nwhile IFS= read -r dir; do\n  echo \"==> clippy: $dir\"\n  (cd \"$dir\" && PYO3_PYTHON=\"$_VENV/bin/python\" cargo clippy -- -D warnings) || _FAIL=1\ndone < <(find . -name 'Cargo.toml' ! -path '*/target/*' ! -path '*/.venv/*' \\\n  | while IFS= read -r f; do\n      dir=$(dirname \"$f\")\n      grep -q '^\\[workspace\\]' \"$f\" 2>/dev/null && echo \"$dir\" && continue\n      find \"$(dirname \"$dir\")\" -maxdepth 1 -name 'Cargo.toml' 2>/dev/null | grep -q . || echo \"$dir\"\n    done | sort -u)\nrm -rf \"$_VENV\"\nexit $_FAIL\n"
       ],
       "only_when_staged": "*.rs",
       "advisory": false
@@ -282,128 +282,6 @@
         "sh",
         "-c",
         "\n_FAIL=0\nwhile IFS= read -r dir; do\n  echo \"==> audit: $dir\"\n  (cd \"$dir\" && cargo audit) || _FAIL=1\ndone < <(find . -name 'Cargo.toml' ! -path '*/target/*' ! -path '*/.venv/*' \\\n  | while IFS= read -r f; do\n      dir=$(dirname \"$f\")\n      grep -q '^\\[workspace\\]' \"$f\" 2>/dev/null && echo \"$dir\" && continue\n      find \"$(dirname \"$dir\")\" -maxdepth 1 -name 'Cargo.toml' 2>/dev/null | grep -q . || echo \"$dir\"\n    done | sort -u)\nexit $_FAIL\n"
-      ],
-      "advisory": true
-    }
-  ],
-  "ui": [
-    {
-      "name": "vitest",
-      "description": "JavaScript unit tests (npm ci + Vitest)",
-      "cmd": [
-        "sh",
-        "-c",
-        "npm ci && npx vitest run"
-      ],
-      "only_when_staged": "mcpgateway/static/",
-      "advisory": false
-    },
-    {
-      "name": "htmlhint",
-      "description": "HTML linting on changed .html files (mcpgateway/templates/)",
-      "cmd": [
-        "sh",
-        "-c",
-        "[ -d node_modules ] || npm ci; FILES=$(git diff --name-only HEAD 2>/dev/null | grep -E '^mcpgateway/templates/.*\\.html$' | tr '\\n' ' '); [ -z \"$FILES\" ] && echo 'No changed HTML files — skipping htmlhint' && exit 0; echo \"Running htmlhint on: $FILES\"; npx htmlhint $FILES"
-      ],
-      "only_when_staged": "mcpgateway/templates/",
-      "advisory": false
-    },
-    {
-      "name": "stylelint",
-      "description": "CSS linting on changed .css files (mcpgateway/static/)",
-      "cmd": [
-        "sh",
-        "-c",
-        "[ -d node_modules ] || npm ci; FILES=$(git diff --name-only HEAD 2>/dev/null | grep -E '^mcpgateway/static/.*\\.css$' | tr '\\n' ' '); [ -z \"$FILES\" ] && echo 'No changed CSS files — skipping stylelint' && exit 0; echo \"Running stylelint on: $FILES\"; npx stylelint $FILES"
-      ],
-      "only_when_staged": "mcpgateway/static/",
-      "advisory": false
-    },
-    {
-      "name": "eslint",
-      "description": "ESLint on changed .js files (mcpgateway/static/)",
-      "cmd": [
-        "sh",
-        "-c",
-        "[ -d node_modules ] || npm ci; FILES=$(git diff --name-only HEAD 2>/dev/null | grep -E '^mcpgateway/static/.*\\.js$' | tr '\\n' ' '); [ -z \"$FILES\" ] && echo 'No changed JS files — skipping eslint' && exit 0; echo \"Running eslint on: $FILES\"; npx eslint $FILES"
-      ],
-      "only_when_staged": "mcpgateway/static/",
-      "advisory": false
-    },
-    {
-      "name": "jshint",
-      "description": "JSHint on changed .js files (mcpgateway/static/)",
-      "cmd": [
-        "sh",
-        "-c",
-        "[ -d node_modules ] || npm ci; FILES=$(git diff --name-only HEAD 2>/dev/null | grep -E '^mcpgateway/static/.*\\.js$' | tr '\\n' ' '); [ -z \"$FILES\" ] && echo 'No changed JS files — skipping jshint' && exit 0; echo \"Running jshint on: $FILES\"; npx jshint --config .jshintrc $FILES"
-      ],
-      "only_when_staged": "mcpgateway/static/",
-      "advisory": false
-    },
-    {
-      "name": "retire",
-      "description": "Retire.js security scan (mcpgateway/static/, advisory)",
-      "cmd": [
-        "sh",
-        "-c",
-        "[ -d node_modules ] || npm ci; npx --yes retire --path mcpgateway/static"
-      ],
-      "only_when_staged": "mcpgateway/static/",
-      "advisory": true
-    },
-    {
-      "name": "jscpd",
-      "description": "Copy-paste detection (mcpgateway/static/ + templates/, advisory)",
-      "cmd": [
-        "sh",
-        "-c",
-        "[ -d node_modules ] || npm ci; npx --yes jscpd mcpgateway/static/ mcpgateway/templates/"
-      ],
-      "only_when_staged": "mcpgateway/static/",
-      "advisory": true
-    },
-    {
-      "name": "nodejsscan",
-      "description": "NodeJSScan JS security scanner (mcpgateway/static/, advisory)",
-      "cmd": [
-        "sh",
-        "-c",
-        "uv run nodejsscan --directory ./mcpgateway/static"
-      ],
-      "only_when_staged": "mcpgateway/static/",
-      "advisory": true
-    },
-    {
-      "name": "npm-audit",
-      "description": "npm dependency security audit (advisory)",
-      "cmd": [
-        "sh",
-        "-c",
-        "[ -d node_modules ] || npm ci; npm audit --audit-level=high"
-      ],
-      "only_when_staged": "mcpgateway/static/",
-      "advisory": true
-    }
-  ],
-  "integration": [
-    {
-      "name": "alembic:upgrade",
-      "description": "Database migration upgrade validation (SQLite + PostgreSQL, docker-managed)",
-      "cmd": [
-        "bash",
-        "scripts/ci/run_upgrade_validation.sh"
-      ],
-      "advisory": false
-    },
-    {
-      "name": "playwright:smoke",
-      "description": "Playwright UI smoke tests (starts gateway via make serve on :8080, kills after)",
-      "cmd": [
-        "sh",
-        "-c",
-        "cp .env.example .env 2>/dev/null || true; make serve > /tmp/mcpgateway-ci.log 2>&1 & _PID=$!; echo '==> Waiting for gateway on localhost:8080...'; for i in $(seq 1 120); do curl -fsS http://localhost:8080/health >/dev/null 2>&1 && break; kill -0 $_PID 2>/dev/null || { echo 'Gateway exited during startup'; cat /tmp/mcpgateway-ci.log; exit 1; }; sleep 1; done; curl -fsS http://localhost:8080/health >/dev/null; make test-ui-ci-smoke; _EC=$?; kill $_PID 2>/dev/null || true; exit $_EC"
       ],
       "advisory": true
     },
@@ -485,6 +363,139 @@
       "advisory": true
     }
   ],
+  "ui": [
+    {
+      "name": "vitest",
+      "description": "JavaScript unit tests (npm ci + Vitest)",
+      "cmd": [
+        "sh",
+        "-c",
+        "npm ci && npx vitest run"
+      ],
+      "only_when_staged": "mcpgateway/static/",
+      "advisory": false
+    },
+    {
+      "name": "htmlhint",
+      "description": "HTML linting on changed .html files (mcpgateway/templates/)",
+      "cmd": [
+        "sh",
+        "-c",
+        "[ -d node_modules ] || npm ci; FILES=$(git diff --name-only HEAD 2>/dev/null | grep -E '^mcpgateway/templates/.*\\.html$' | tr '\\n' ' '); [ -z \"$FILES\" ] && echo 'No changed HTML files \u2014 skipping htmlhint' && exit 0; echo \"Running htmlhint on: $FILES\"; npx htmlhint $FILES"
+      ],
+      "only_when_staged": "mcpgateway/templates/",
+      "advisory": false
+    },
+    {
+      "name": "stylelint",
+      "description": "CSS linting on changed .css files (mcpgateway/static/)",
+      "cmd": [
+        "sh",
+        "-c",
+        "[ -d node_modules ] || npm ci; FILES=$(git diff --name-only HEAD 2>/dev/null | grep -E '^mcpgateway/static/.*\\.css$' | tr '\\n' ' '); [ -z \"$FILES\" ] && echo 'No changed CSS files \u2014 skipping stylelint' && exit 0; echo \"Running stylelint on: $FILES\"; npx stylelint $FILES"
+      ],
+      "only_when_staged": "mcpgateway/static/",
+      "advisory": false
+    },
+    {
+      "name": "eslint",
+      "description": "ESLint on changed .js files (mcpgateway/static/)",
+      "cmd": [
+        "sh",
+        "-c",
+        "[ -d node_modules ] || npm ci; FILES=$(git diff --name-only HEAD 2>/dev/null | grep -E '^mcpgateway/static/.*\\.js$' | tr '\\n' ' '); [ -z \"$FILES\" ] && echo 'No changed JS files \u2014 skipping eslint' && exit 0; echo \"Running eslint on: $FILES\"; npx eslint $FILES"
+      ],
+      "only_when_staged": "mcpgateway/static/",
+      "advisory": false
+    },
+    {
+      "name": "jshint",
+      "description": "JSHint on changed .js files (mcpgateway/static/)",
+      "cmd": [
+        "sh",
+        "-c",
+        "[ -d node_modules ] || npm ci; FILES=$(git diff --name-only HEAD 2>/dev/null | grep -E '^mcpgateway/static/.*\\.js$' | tr '\\n' ' '); [ -z \"$FILES\" ] && echo 'No changed JS files \u2014 skipping jshint' && exit 0; echo \"Running jshint on: $FILES\"; npx jshint --config .jshintrc $FILES"
+      ],
+      "only_when_staged": "mcpgateway/static/",
+      "advisory": false
+    },
+    {
+      "name": "retire",
+      "description": "Retire.js security scan (mcpgateway/static/, advisory)",
+      "cmd": [
+        "sh",
+        "-c",
+        "[ -d node_modules ] || npm ci; npx --yes retire --path mcpgateway/static"
+      ],
+      "only_when_staged": "mcpgateway/static/",
+      "advisory": true
+    },
+    {
+      "name": "jscpd",
+      "description": "Copy-paste detection (mcpgateway/static/ + templates/, advisory)",
+      "cmd": [
+        "sh",
+        "-c",
+        "[ -d node_modules ] || npm ci; npx --yes jscpd mcpgateway/static/ mcpgateway/templates/"
+      ],
+      "only_when_staged": "mcpgateway/static/",
+      "advisory": true
+    },
+    {
+      "name": "nodejsscan",
+      "description": "NodeJSScan JS security scanner (mcpgateway/static/, advisory)",
+      "cmd": [
+        "sh",
+        "-c",
+        "uv run nodejsscan --directory ./mcpgateway/static"
+      ],
+      "only_when_staged": "mcpgateway/static/",
+      "advisory": true
+    },
+    {
+      "name": "npm-audit",
+      "description": "npm dependency security audit (advisory)",
+      "cmd": [
+        "sh",
+        "-c",
+        "[ -d node_modules ] || npm ci; npm audit --audit-level=high"
+      ],
+      "only_when_staged": "mcpgateway/static/",
+      "advisory": true
+    }
+  ],
+  "integration": [
+    {
+      "name": "alembic:check",
+      "description": "Run alembic upgrade head against SQLite (temp file) and containerised PostgreSQL",
+      "cmd": [
+        "bash",
+        "-c",
+        ". ~/.venv/mcpgateway/bin/activate\nset -euo pipefail\n\nALEMBIC=\"alembic -c mcpgateway/alembic.ini\"\nTMPDB=$(mktemp /tmp/alembic-check-XXXXXX.db)\nPG_CTR=\"alembic-check-pg-$$\"\n\ncleanup() { docker rm -f \"$PG_CTR\" >/dev/null 2>&1 || true; rm -f \"$TMPDB\"; }\ntrap cleanup EXIT\n\n# \u2500\u2500 SQLite \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\necho '==> SQLite: alembic upgrade head'\nDATABASE_URL=\"sqlite:///$TMPDB\" $ALEMBIC upgrade head\necho 'SQLite: OK'\n\n# \u2500\u2500 psycopg (install only if missing) \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\npython -c 'import psycopg' 2>/dev/null || uv pip install -q 'psycopg[binary]>=3'\n\n# \u2500\u2500 PostgreSQL (Docker) \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\necho '==> Starting postgres:16-alpine container'\ndocker run -d --name \"$PG_CTR\"   -e POSTGRES_USER=postgres   -e POSTGRES_PASSWORD=testpass   -e POSTGRES_DB=mcp   -p 15432:5432   postgres:16-alpine >/dev/null\n\necho '==> Waiting for PostgreSQL (up to 60s)...'\nfor i in $(seq 1 60); do\n  docker exec \"$PG_CTR\" pg_isready -U postgres -d mcp >/dev/null 2>&1 && break\n  [ \"$i\" -eq 60 ] && { echo 'PostgreSQL did not become ready in time'; exit 1; }\n  sleep 1\ndone\n\necho '==> PostgreSQL: alembic upgrade head'\nPG_URL=\"postgresql+psycopg://postgres:testpass@localhost:15432/mcp\"\nDATABASE_URL=\"$PG_URL\" $ALEMBIC upgrade head\necho 'PostgreSQL: OK'\n"
+      ],
+      "only_when_staged": "mcpgateway/alembic/",
+      "advisory": false
+    },
+    {
+      "name": "alembic:upgrade",
+      "description": "Database migration upgrade validation (SQLite + PostgreSQL, docker-managed)",
+      "cmd": [
+        "bash",
+        "scripts/ci/run_upgrade_validation.sh"
+      ],
+      "advisory": false
+    },
+    {
+      "name": "playwright:smoke",
+      "description": "Playwright UI smoke tests \u2014 mirrors .github/workflows/playwright.yml: make serve on :4444 then make test-ui-ci-smoke",
+      "cmd": [
+        "sh",
+        "-c",
+        "set -euo pipefail\ncleanup() {\n  _s=$?\n  if [ -f /tmp/mcpgateway-ci.pid ] && kill -0 \"$(cat /tmp/mcpgateway-ci.pid)\" 2>/dev/null; then\n    kill \"$(cat /tmp/mcpgateway-ci.pid)\" || true; sleep 1\n  fi\n  rm -f /tmp/mcpgateway-ci.pid /tmp/mcpgateway-gunicorn.lock\n  if [ \"$_s\" -ne 0 ]; then\n    echo '==> Gateway log (last 100 lines):'; tail -n 100 /tmp/mcpgateway-ci.log || true\n  fi\n  return 0\n}\ntrap cleanup EXIT\ncp .env.example .env 2>/dev/null || true\nexport TEST_BASE_URL='http://127.0.0.1:4444'\nexport GUNICORN_WORKERS=1\nexport MCPGATEWAY_UI_ENABLED=true\nexport MCPGATEWAY_ADMIN_API_ENABLED=true\nexport SECURE_COOKIES=false\nexport FORCE_START=true\nsource ~/.venv/mcpgateway/bin/activate\nmake serve > /tmp/mcpgateway-ci.log 2>&1 &\necho $! > /tmp/mcpgateway-ci.pid\necho '==> Waiting for gateway on http://127.0.0.1:4444 ...'\nfor i in $(seq 1 120); do\n  curl -fsS \"${TEST_BASE_URL}/health\" >/dev/null 2>&1 && break\n  kill -0 \"$(cat /tmp/mcpgateway-ci.pid)\" 2>/dev/null || { echo 'Gateway exited during startup'; exit 1; }\n  sleep 1\ndone\ncurl -fsS \"${TEST_BASE_URL}/health\" >/dev/null\nmake test-ui-ci-smoke\n"
+      ],
+      "advisory": true
+    }
+  ],
   "all": [
     {
       "name": "yamllint",
@@ -492,9 +503,9 @@
       "cmd": [
         "sh",
         "-c",
-        "FILES=$(git diff --name-only HEAD 2>/dev/null | grep -E '\\.(yaml|yml)$' | tr '\\n' ' '); [ -z \"$FILES\" ] && echo 'No changed YAML files — skipping yamllint' && exit 0; echo \"Running yamllint on: $FILES\"; uv run yamllint -c .yamllint $FILES"
+        "FILES=$(git diff --name-only HEAD 2>/dev/null | grep -E '\\.(yaml|yml)$' | tr '\\n' ' '); [ -z \"$FILES\" ] && echo 'No changed YAML files \u2014 skipping yamllint' && exit 0; echo \"Running yamllint on: $FILES\"; uv run yamllint -c .yamllint $FILES"
       ],
-      "advisory": false
+      "advisory": true
     },
     {
       "name": "jsonlint",
@@ -502,7 +513,7 @@
       "cmd": [
         "sh",
         "-c",
-        "FILES=$(git diff --name-only HEAD 2>/dev/null | grep -E '\\.json$' | grep -v '^node_modules/'); [ -z \"$FILES\" ] && echo 'No changed JSON files — skipping jsonlint' && exit 0; echo \"Running jsonlint on: $FILES\"; echo \"$FILES\" | xargs -I{} jq empty \"{}\""
+        "FILES=$(git diff --name-only HEAD 2>/dev/null | grep -E '\\.json$' | grep -v '^node_modules/'); [ -z \"$FILES\" ] && echo 'No changed JSON files \u2014 skipping jsonlint' && exit 0; echo \"Running jsonlint on: $FILES\"; echo \"$FILES\" | xargs -I{} jq empty \"{}\""
       ],
       "advisory": false
     },
@@ -512,7 +523,7 @@
       "cmd": [
         "sh",
         "-c",
-        "FILES=$(git diff --name-only HEAD 2>/dev/null | grep -E '\\.toml$' | grep -v '^plugin_templates/' | grep -v '^mcp-servers/templates/'); [ -z \"$FILES\" ] && echo 'No changed TOML files — skipping tomllint' && exit 0; echo \"Running tomllint on: $FILES\"; echo \"$FILES\" | xargs -I{} tomlcheck \"{}\""
+        "FILES=$(git diff --name-only HEAD 2>/dev/null | grep -E '\\.toml$' | grep -v '^plugin_templates/' | grep -v '^mcp-servers/templates/'); [ -z \"$FILES\" ] && echo 'No changed TOML files \u2014 skipping tomllint' && exit 0; echo \"Running tomllint on: $FILES\"; echo \"$FILES\" | xargs -I{} tomlcheck \"{}\""
       ],
       "advisory": false
     },
@@ -529,7 +540,7 @@
         "--report-json",
         "license-check-report.json"
       ],
-      "advisory": true
+      "advisory": false
     }
   ]
 }
