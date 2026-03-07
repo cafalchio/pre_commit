@@ -63,6 +63,7 @@ pub struct App {
     pub run_rx: Option<mpsc::Receiver<RunMsg>>,
     pub cancel_flag: Option<Arc<AtomicBool>>,
     pub repo_root: PathBuf,
+    pub mouse_capture: bool,
     // Setup form
     pub setup_repo: String,
     pub setup_branch: String,  // branch name or PR number
@@ -106,6 +107,7 @@ impl App {
             run_rx: None,
             cancel_flag: None,
             repo_root: config.repo,
+            mouse_capture: true,
             setup_repo,
             setup_branch,
             setup_focus: 0,

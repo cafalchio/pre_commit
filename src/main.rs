@@ -55,6 +55,14 @@ fn main() -> io::Result<()> {
                             app.cancel_running();
                             break;
                         }
+                        KeyCode::Char('m') => {
+                            app.mouse_capture = !app.mouse_capture;
+                            if app.mouse_capture {
+                                execute!(terminal.backend_mut(), EnableMouseCapture)?;
+                            } else {
+                                execute!(terminal.backend_mut(), DisableMouseCapture)?;
+                            }
+                        }
                         KeyCode::PageUp => app.output_scroll_up(),
                         KeyCode::PageDown => app.output_scroll_down(),
                         _ => {}
@@ -112,6 +120,14 @@ fn main() -> io::Result<()> {
                     }
                     KeyCode::Char('r') if matches!(&app.mode, Mode::Done) => {
                         app.reset_to_selecting();
+                    }
+                    KeyCode::Char('m') => {
+                        app.mouse_capture = !app.mouse_capture;
+                        if app.mouse_capture {
+                            execute!(terminal.backend_mut(), EnableMouseCapture)?;
+                        } else {
+                            execute!(terminal.backend_mut(), DisableMouseCapture)?;
+                        }
                     }
                     KeyCode::PageUp => app.output_scroll_up(),
                     KeyCode::PageDown => app.output_scroll_down(),

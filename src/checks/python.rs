@@ -137,14 +137,14 @@ pub fn python_checks() -> Vec<CheckDef> {
             advisory: false,
             group: Group::Python,
         },
-        // CheckDef {
-        //     name: "unimport:plugins",
-        //     description: "Unused import detection (plugins/)",
-        //     cmd: vec!["uv", "run", "unimport", "plugins"],
-        //     only_when_staged: Some("plugins/"),
-        //     advisory: false,
-        //     group: Group::Python,
-        // },
+        CheckDef {
+            name: "unimport:plugins",
+            description: "Unused import detection (plugins/)",
+            cmd: vec!["uv", "run", "unimport", "plugins"],
+            only_when_staged: Some("plugins/"),
+            advisory: false,
+            group: Group::Python,
+        },
         CheckDef {
             name: "vulture:mcpgateway",
             description: "Dead code detection (mcpgateway/, advisory)",

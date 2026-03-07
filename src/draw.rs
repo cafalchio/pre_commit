@@ -217,10 +217,15 @@ pub fn draw(f: &mut Frame, app: &mut App) {
             .collect()
     };
 
+    let mouse_indicator = if app.mouse_capture { "" } else { " [mouse off — select freely] " };
     let output_title = if app.output_lines.is_empty() {
-        " Description ".to_string()
+        format!(" Description{mouse_indicator}")
     } else {
-        format!(" Output  {}/{} ", app.output_scroll + 1, app.output_lines.len())
+        format!(" Output  {}/{}{}",
+            app.output_scroll + 1,
+            app.output_lines.len(),
+            if mouse_indicator.is_empty() { " ".to_string() } else { format!(" |{mouse_indicator}") }
+        )
     };
 
     f.render_widget(
@@ -260,13 +265,13 @@ pub fn draw(f: &mut Frame, app: &mut App) {
             let n = app.staged_files.len();
             (
                 format!(" {n} staged file(s) "),
-                " ↑↓/jk: move | Space/Click: toggle | a: all | n: none | Enter/r: run | q: quit "
+                " ↑↓/jk: move | Space/Click: toggle | a: all | n: none | Enter: run | m: mouse | q: quit "
                     .to_string(),
             )
         }
         Mode::Running { idx } => (
             format!(" Running {}/{} ", idx + 1, app.checks.len()),
-            " Running… PgUp/PgDn or scroll to view output ".to_string(),
+            " Running… PgUp/PgDn: scroll | m: toggle mouse (to select text) ".to_string(),
         ),
         Mode::Done => unreachable!(),
     };
