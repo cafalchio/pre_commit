@@ -4,8 +4,8 @@ pub fn ui_checks() -> Vec<CheckDef> {
     vec![
         CheckDef {
             name: "vitest",
-            description: "JavaScript unit tests (Vitest)",
-            cmd: vec!["npx", "vitest", "run"],
+            description: "JavaScript unit tests (npm ci + Vitest)",
+            cmd: vec!["sh", "-c", "npm ci && npx vitest run"],
             only_when_staged: Some("mcpgateway/static/"),
             advisory: false,
             group: Group::Ui,

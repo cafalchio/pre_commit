@@ -1,9 +1,10 @@
 use std::io::{BufRead, BufReader};
 use std::path::PathBuf;
 use std::process::{Command, Stdio};
-use std::sync::mpsc;
+use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::{mpsc, Arc};
 use std::thread;
-use std::time::Instant;
+use std::time::{Duration, Instant};
 
 use ratatui::layout::Rect;
 use ratatui::widgets::ListState;
@@ -60,6 +61,7 @@ pub struct App {
     pub staged_files: Vec<String>,
     pub list_area: Option<Rect>,
     pub run_rx: Option<mpsc::Receiver<RunMsg>>,
+    pub cancel_flag: Option<Arc<AtomicBool>>,
     pub repo_root: PathBuf,
     // Setup form
     pub setup_repo: String,
@@ -102,6 +104,7 @@ impl App {
             staged_files: Vec::new(),
             list_area: None,
             run_rx: None,
+            cancel_flag: None,
             repo_root: config.repo,
             setup_repo,
             setup_branch,
@@ -256,14 +259,22 @@ impl App {
 
     // ── Running ──────────────────────────────────────────────────────────────
 
+    /// Signal the running subprocess to terminate and clean up channels.
+    pub fn cancel_running(&mut self) {
+        if let Some(flag) = self.cancel_flag.take() {
+            flag.store(true, Ordering::Relaxed);
+        }
+        self.run_rx = None;
+    }
+
     /// Go back to the selection screen, resetting all statuses and output.
     pub fn reset_to_selecting(&mut self) {
+        self.cancel_running();
         for s in &mut self.statuses {
             *s = CheckStatus::Pending;
         }
         self.output_lines.clear();
         self.output_scroll = 0;
-        self.run_rx = None;
         self.mode = Mode::Selecting;
     }
 
@@ -330,6 +341,9 @@ impl App {
         let (tx, rx) = mpsc::channel::<RunMsg>();
         self.run_rx = Some(rx);
 
+        let cancel = Arc::new(AtomicBool::new(false));
+        self.cancel_flag = Some(Arc::clone(&cancel));
+
         let repo_root = self.repo_root.clone();
 
         thread::spawn(move || {
@@ -368,7 +382,20 @@ impl App {
                 }
             });
 
-            let status = child.wait().ok();
+            // Poll for completion or cancellation every 50ms.
+            let status = loop {
+                if cancel.load(Ordering::Relaxed) {
+                    child.kill().ok();
+                    child.wait().ok(); // reap zombie
+                    break None;        // cancelled → report as failed
+                }
+                match child.try_wait() {
+                    Ok(Some(s)) => break Some(s),
+                    Ok(None) => thread::sleep(Duration::from_millis(50)),
+                    Err(_) => break None,
+                }
+            };
+
             out_thread.join().ok();
             err_thread.join().ok();
 

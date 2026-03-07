@@ -51,7 +51,10 @@ fn main() -> io::Result<()> {
             if event::poll(std::time::Duration::from_millis(16))? {
                 match event::read()? {
                     Event::Key(key) if key.kind == KeyEventKind::Press => match key.code {
-                        KeyCode::Char('q') | KeyCode::Esc => break,
+                        KeyCode::Char('q') | KeyCode::Esc => {
+                            app.cancel_running();
+                            break;
+                        }
                         KeyCode::PageUp => app.output_scroll_up(),
                         KeyCode::PageDown => app.output_scroll_down(),
                         _ => {}
