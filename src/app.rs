@@ -43,8 +43,8 @@ pub enum ListEntry {
 }
 
 pub enum RunMsg {
-    Line(String),
-    Done { success: bool, elapsed: f64 },
+    Line { idx: usize, line: String },
+    Done { idx: usize, success: bool, elapsed: f64 },
 }
 
 // ---------------------------------------------------------------------------
@@ -63,7 +63,9 @@ pub struct App {
     pub staged_files: Vec<String>,
     pub list_area: Option<Rect>,
     pub run_rx: Option<mpsc::Receiver<RunMsg>>,
-    pub cancel_flag: Option<Arc<AtomicBool>>,
+    cancel_flags: Vec<Arc<AtomicBool>>,
+    running_batch: Vec<usize>, // check indices still running in the current parallel batch
+    batch_next: usize,         // idx to advance to when the batch completes
     log_file: Option<std::fs::File>,
     pub repo_root: PathBuf,
     pub mouse_capture: bool,
@@ -121,7 +123,9 @@ impl App {
             staged_files: Vec::new(),
             list_area: None,
             run_rx: None,
-            cancel_flag: None,
+            cancel_flags: Vec::new(),
+            running_batch: Vec::new(),
+            batch_next: 0,
             log_file: None,
             repo_root: config.repo,
             mouse_capture: true,
@@ -291,11 +295,13 @@ impl App {
 
     // ── Running ──────────────────────────────────────────────────────────────
 
-    /// Signal the running subprocess to terminate and clean up channels.
+    /// Signal all running subprocesses to terminate and clean up channels.
     pub fn cancel_running(&mut self) {
-        if let Some(flag) = self.cancel_flag.take() {
+        for flag in &self.cancel_flags {
             flag.store(true, Ordering::Relaxed);
         }
+        self.cancel_flags.clear();
+        self.running_batch.clear();
         self.run_rx = None;
         if let Some(ref mut f) = self.log_file {
             let _ = writeln!(f, "==> Cancelled");
@@ -315,6 +321,7 @@ impl App {
     }
 
     pub fn start_running(&mut self) {
+        self.cancel_running();
         for s in &mut self.statuses {
             *s = CheckStatus::Pending;
         }
@@ -364,110 +371,146 @@ impl App {
                 return;
             }
             if self.run_rx.is_none() {
-                self.spawn_or_skip(idx);
+                self.spawn_batch(idx);
                 if self.run_rx.is_none() {
+                    // whole batch was skipped; mode already advanced — loop
                     continue;
                 }
             }
-            self.poll_rx(idx);
+            self.poll_batch();
             return;
         }
     }
 
-    fn spawn_or_skip(&mut self, idx: usize) {
-        let selected = self.selected[idx];
-        let check_name = self.checks[idx].name.clone();
-        let cmd = self.checks[idx].cmd.clone();
-
-        if !selected {
-            self.statuses[idx] = CheckStatus::Skipped;
-            let skip_line = format!("[-] SKIP  {check_name}  (not selected)");
-            if let Some(ref mut f) = self.log_file {
-                let _ = writeln!(f, "{skip_line}");
-                let _ = writeln!(f);
+    /// Collect the run of consecutive checks starting at `start` that share the
+    /// same `parallel_group` value.  A check with `parallel_group: None` is
+    /// always a batch of one.
+    fn compute_batch(&self, start: usize) -> Vec<usize> {
+        match self.checks[start].parallel_group.as_deref() {
+            None => vec![start],
+            Some(pg) => {
+                let mut batch = vec![start];
+                let mut i = start + 1;
+                while i < self.checks.len()
+                    && self.checks[i].parallel_group.as_deref() == Some(pg)
+                {
+                    batch.push(i);
+                    i += 1;
+                }
+                batch
             }
-            self.output_lines.push(skip_line);
-            self.output_lines.push(String::new());
-            self.advance(idx);
+        }
+    }
+
+    /// Spawn every selected check in the batch concurrently on a shared channel.
+    fn spawn_batch(&mut self, idx: usize) {
+        let batch = self.compute_batch(idx);
+        self.batch_next = *batch.last().unwrap() + 1;
+
+        // Mark unselected checks as skipped.
+        for &ci in &batch {
+            if !self.selected[ci] {
+                self.statuses[ci] = CheckStatus::Skipped;
+                self.output_lines.push(String::new());
+            }
+        }
+
+        let selected: Vec<usize> = batch.iter().copied().filter(|&i| self.selected[i]).collect();
+        if selected.is_empty() {
+            self.advance_to(self.batch_next);
             return;
         }
 
-        self.statuses[idx] = CheckStatus::Running;
-        let run_line = format!("┌─ Running: {check_name} ");
-        if let Some(ref mut f) = self.log_file {
-            let _ = writeln!(f, "{run_line}");
-        }
-        self.output_lines.push(run_line);
-        self.output_scroll = self.output_lines.len().saturating_sub(1);
-
+        let is_parallel = selected.len() > 1;
         let (tx, rx) = mpsc::channel::<RunMsg>();
         self.run_rx = Some(rx);
+        self.cancel_flags.clear();
+        self.running_batch = selected.clone();
 
-        let cancel = Arc::new(AtomicBool::new(false));
-        self.cancel_flag = Some(Arc::clone(&cancel));
+        for ci in selected {
+            let check_name = self.checks[ci].name.clone();
+            let cmd = self.checks[ci].cmd.clone();
 
-        let repo_root = self.repo_root.clone();
-
-        thread::spawn(move || {
-            let (prog, args) = cmd.split_first().expect("empty cmd");
-            let start = Instant::now();
-
-            let mut command = Command::new(prog);
-            command
-                .args(args)
-                .current_dir(&repo_root)
-                .stdout(Stdio::piped())
-                .stderr(Stdio::piped());
-
-            let mut child = match command.spawn() {
-                Ok(c) => c,
-                Err(e) => {
-                    let _ = tx.send(RunMsg::Line(format!("spawn error: {e}")));
-                    let _ = tx.send(RunMsg::Done { success: false, elapsed: 0.0 });
-                    return;
-                }
+            self.statuses[ci] = CheckStatus::Running;
+            let run_line = if is_parallel {
+                format!("┌─ Running (parallel): {check_name} ")
+            } else {
+                format!("┌─ Running: {check_name} ")
             };
+            if let Some(ref mut f) = self.log_file {
+                let _ = writeln!(f, "{run_line}");
+            }
+            self.output_lines.push(run_line);
 
-            let stdout = child.stdout.take().unwrap();
-            let stderr = child.stderr.take().unwrap();
+            let cancel = Arc::new(AtomicBool::new(false));
+            self.cancel_flags.push(Arc::clone(&cancel));
 
-            let tx_out = tx.clone();
-            let out_thread = thread::spawn(move || {
-                for line in BufReader::new(stdout).lines().map_while(Result::ok) {
-                    let _ = tx_out.send(RunMsg::Line(line));
-                }
+            let repo_root = self.repo_root.clone();
+            let tx = tx.clone();
+
+            thread::spawn(move || {
+                let (prog, args) = cmd.split_first().expect("empty cmd");
+                let start = Instant::now();
+
+                let mut command = Command::new(prog);
+                command
+                    .args(args)
+                    .current_dir(&repo_root)
+                    .stdout(Stdio::piped())
+                    .stderr(Stdio::piped());
+
+                let mut child = match command.spawn() {
+                    Ok(c) => c,
+                    Err(e) => {
+                        let _ = tx.send(RunMsg::Line { idx: ci, line: format!("spawn error: {e}") });
+                        let _ = tx.send(RunMsg::Done { idx: ci, success: false, elapsed: 0.0 });
+                        return;
+                    }
+                };
+
+                let stdout = child.stdout.take().unwrap();
+                let stderr = child.stderr.take().unwrap();
+
+                let tx_out = tx.clone();
+                let out_thread = thread::spawn(move || {
+                    for line in BufReader::new(stdout).lines().map_while(Result::ok) {
+                        let _ = tx_out.send(RunMsg::Line { idx: ci, line });
+                    }
+                });
+                let tx_err = tx.clone();
+                let err_thread = thread::spawn(move || {
+                    for line in BufReader::new(stderr).lines().map_while(Result::ok) {
+                        let _ = tx_err.send(RunMsg::Line { idx: ci, line });
+                    }
+                });
+
+                let status = loop {
+                    if cancel.load(Ordering::Relaxed) {
+                        child.kill().ok();
+                        child.wait().ok();
+                        break None;
+                    }
+                    match child.try_wait() {
+                        Ok(Some(s)) => break Some(s),
+                        Ok(None) => thread::sleep(Duration::from_millis(50)),
+                        Err(_) => break None,
+                    }
+                };
+
+                out_thread.join().ok();
+                err_thread.join().ok();
+
+                let elapsed = start.elapsed().as_secs_f64();
+                let success = status.map(|s| s.success()).unwrap_or(false);
+                let _ = tx.send(RunMsg::Done { idx: ci, success, elapsed });
             });
-            let tx_err = tx.clone();
-            let err_thread = thread::spawn(move || {
-                for line in BufReader::new(stderr).lines().map_while(Result::ok) {
-                    let _ = tx_err.send(RunMsg::Line(line));
-                }
-            });
+        }
 
-            // Poll for completion or cancellation every 50ms.
-            let status = loop {
-                if cancel.load(Ordering::Relaxed) {
-                    child.kill().ok();
-                    child.wait().ok(); // reap zombie
-                    break None;        // cancelled → report as failed
-                }
-                match child.try_wait() {
-                    Ok(Some(s)) => break Some(s),
-                    Ok(None) => thread::sleep(Duration::from_millis(50)),
-                    Err(_) => break None,
-                }
-            };
-
-            out_thread.join().ok();
-            err_thread.join().ok();
-
-            let elapsed = start.elapsed().as_secs_f64();
-            let success = status.map(|s| s.success()).unwrap_or(false);
-            let _ = tx.send(RunMsg::Done { success, elapsed });
-        });
+        self.output_scroll = self.output_lines.len().saturating_sub(1);
     }
 
-    fn poll_rx(&mut self, idx: usize) {
+    /// Drain the shared channel and update statuses; advance when the batch is fully done.
+    fn poll_batch(&mut self) {
         let messages: Vec<RunMsg> = {
             let Some(rx) = &self.run_rx else { return };
             let mut buf = Vec::new();
@@ -480,51 +523,59 @@ impl App {
             buf
         };
 
-        let mut done: Option<(bool, f64)> = None;
+        let is_parallel = self.running_batch.len() > 1;
+
         for msg in messages {
             match msg {
-                RunMsg::Line(line) => {
-                    let formatted = format!("│ {line}");
+                RunMsg::Line { idx, line } => {
+                    let formatted = if is_parallel {
+                        format!("│ [{}] {line}", self.checks[idx].name)
+                    } else {
+                        format!("│ {line}")
+                    };
                     if let Some(ref mut f) = self.log_file {
                         let _ = writeln!(f, "{formatted}");
                     }
                     self.output_lines.push(formatted);
                     self.output_scroll = self.output_lines.len().saturating_sub(1);
                 }
-                RunMsg::Done { success, elapsed } => done = Some((success, elapsed)),
+                RunMsg::Done { idx, success, elapsed } => {
+                    let check_name = self.checks[idx].name.clone();
+                    let check_advisory = self.checks[idx].advisory;
+                    self.statuses[idx] = if success {
+                        let line = format!("└─ [+] OK    {check_name}  ({elapsed:.1}s)");
+                        if let Some(ref mut f) = self.log_file { let _ = writeln!(f, "{line}"); let _ = writeln!(f); }
+                        self.output_lines.push(line);
+                        CheckStatus::Passed(elapsed)
+                    } else if check_advisory {
+                        let line = format!("└─ [!] WARN  {check_name}  ({elapsed:.1}s)");
+                        if let Some(ref mut f) = self.log_file { let _ = writeln!(f, "{line}"); let _ = writeln!(f); }
+                        self.output_lines.push(line);
+                        CheckStatus::Advisory(elapsed)
+                    } else {
+                        let line = format!("└─ [x] FAIL  {check_name}  ({elapsed:.1}s)");
+                        if let Some(ref mut f) = self.log_file { let _ = writeln!(f, "{line}"); let _ = writeln!(f); }
+                        self.output_lines.push(line);
+                        CheckStatus::Failed(elapsed)
+                    };
+                    self.output_lines.push(String::new());
+                    self.output_scroll = self.output_lines.len().saturating_sub(1);
+                    self.running_batch.retain(|&i| i != idx);
+                }
             }
         }
 
-        if let Some((success, elapsed)) = done {
+        if self.running_batch.is_empty() && self.run_rx.is_some() {
             self.run_rx = None;
-            let check_name = self.checks[idx].name.clone();
-            let check_advisory = self.checks[idx].advisory;
-            self.statuses[idx] = if success {
-                let line = format!("└─ [+] OK    {check_name}  ({elapsed:.1}s)");
-                if let Some(ref mut f) = self.log_file { let _ = writeln!(f, "{line}"); let _ = writeln!(f); }
-                self.output_lines.push(line);
-                CheckStatus::Passed(elapsed)
-            } else if check_advisory {
-                let line = format!("└─ [!] WARN  {check_name}  ({elapsed:.1}s)");
-                if let Some(ref mut f) = self.log_file { let _ = writeln!(f, "{line}"); let _ = writeln!(f); }
-                self.output_lines.push(line);
-                CheckStatus::Advisory(elapsed)
-            } else {
-                let line = format!("└─ [x] FAIL  {check_name}  ({elapsed:.1}s)");
-                if let Some(ref mut f) = self.log_file { let _ = writeln!(f, "{line}"); let _ = writeln!(f); }
-                self.output_lines.push(line);
-                CheckStatus::Failed(elapsed)
-            };
-            self.output_lines.push(String::new());
-            self.output_scroll = self.output_lines.len().saturating_sub(1);
-            self.advance(idx);
+            self.cancel_flags.clear();
+            let next = self.batch_next;
+            self.advance_to(next);
         }
     }
 
-    fn advance(&mut self, idx: usize) {
-        let next = idx + 1;
+    fn advance_to(&mut self, next: usize) {
         self.mode = if next >= self.checks.len() {
-            self.log_file = None; // flush + close
+            self.log_file = None;
             Mode::Done
         } else {
             Mode::Running { idx: next }
@@ -615,7 +666,9 @@ mod tests {
             staged_files: Vec::new(),
             list_area: None,
             run_rx: None,
-            cancel_flag: None,
+            cancel_flags: Vec::new(),
+            running_batch: Vec::new(),
+            batch_next: 0,
             log_file: None,
             repo_root: PathBuf::from("./"),
             mouse_capture: false,

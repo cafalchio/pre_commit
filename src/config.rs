@@ -6,10 +6,6 @@ pub struct Config {
     pub run_check: Option<String>,
 }
 
-// ---------------------------------------------------------------------------
-// Persistent config file  (~/.config/pre_commit/config)
-// ---------------------------------------------------------------------------
-
 fn config_file_path() -> Option<PathBuf> {
     std::env::var("HOME")
         .ok()

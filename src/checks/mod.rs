@@ -50,6 +50,8 @@ pub struct CheckDef {
     pub only_when_staged: Option<String>,
     pub advisory: bool,
     pub group: Group,
+    /// Checks sharing the same non-None `parallel_group` string run concurrently.
+    pub parallel_group: Option<String>,
 }
 
 // ---------------------------------------------------------------------------
@@ -65,6 +67,8 @@ struct CheckDefJson {
     only_when_staged: Option<String>,
     #[serde(default)]
     advisory: bool,
+    #[serde(default)]
+    parallel_group: Option<String>,
 }
 
 #[derive(Deserialize)]
@@ -87,10 +91,43 @@ pub struct ChecksConfig {
     pub checks: Vec<CheckDef>,
 }
 
-/// Parse `checks_config.json` (embedded at compile time) into checks + project root.
+/// Resolve the path to `tests_config.json` at runtime.
+///
+/// The file must live alongside the runner binary.
+/// During `cargo test`, `$CARGO_MANIFEST_DIR` is used as a fallback.
+fn find_checks_config_path() -> Option<std::path::PathBuf> {
+    // 1. Next to the binary
+    if let Ok(exe) = std::env::current_exe() {
+        if let Some(dir) = exe.parent() {
+            let path = dir.join("tests_config.json");
+            if path.is_file() {
+                return Some(path);
+            }
+        }
+    }
+
+    // 2. Source tree fallback — set by cargo when running `cargo test`
+    if let Ok(manifest_dir) = std::env::var("CARGO_MANIFEST_DIR") {
+        let path = std::path::PathBuf::from(manifest_dir)
+            .join("src")
+            .join("checks")
+            .join("tests_config.json");
+        if path.is_file() {
+            return Some(path);
+        }
+    }
+
+    None
+}
+
+/// Parse `tests_config.json` (loaded at runtime) into checks + project root.
 pub fn load_checks_config() -> ChecksConfig {
-    const JSON: &str = include_str!("checks_config.json");
-    let data: ChecksConfigJson = serde_json::from_str(JSON).expect("invalid checks_config.json");
+    let path = find_checks_config_path()
+        .expect("tests_config.json not found — place it alongside the binary");
+    let json = std::fs::read_to_string(&path)
+        .unwrap_or_else(|e| panic!("failed to read {}: {e}", path.display()));
+    let data: ChecksConfigJson =
+        serde_json::from_str(&json).unwrap_or_else(|e| panic!("invalid {}: {e}", path.display()));
 
     let sections: [(Vec<CheckDefJson>, Group); 5] = [
         (data.python, Group::Python),
@@ -110,6 +147,7 @@ pub fn load_checks_config() -> ChecksConfig {
                 only_when_staged: c.only_when_staged,
                 advisory: c.advisory,
                 group,
+                parallel_group: c.parallel_group,
             });
         }
     }

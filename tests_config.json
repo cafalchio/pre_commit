@@ -1,0 +1,965 @@
+{
+  "project_root": "/home/cafalchio/mcp-context-forge",
+  "python": [
+    {
+      "name": "ruff:mcpgateway",
+      "description": "Ruff linter on changed .py files (mcpgateway/)",
+      "cmd": [
+        "sh",
+        "-c",
+        "FILES=$(git diff --name-only $(git merge-base HEAD origin/main)...HEAD 2>/dev/null | grep -E '^mcpgateway/.*\\.py$' | tr '\\n' ' '); [ -z \"$FILES\" ] && echo 'No changed Python files \u2014 skipping ruff' && exit 0; echo \"Running ruff on: $FILES\"; uv run ruff check $FILES"
+      ],
+      "only_when_staged": "mcpgateway/",
+      "advisory": false,
+      "parallel_group": "linters"
+    },
+    {
+      "name": "ruff:plugins",
+      "description": "Ruff linter on changed .py files (plugins/)",
+      "cmd": [
+        "sh",
+        "-c",
+        "FILES=$(git diff --name-only $(git merge-base HEAD origin/main)...HEAD 2>/dev/null | grep -E '^plugins/.*\\.py$' | tr '\\n' ' '); [ -z \"$FILES\" ] && echo 'No changed Python files \u2014 skipping ruff' && exit 0; echo \"Running ruff on: $FILES\"; uv run ruff check $FILES"
+      ],
+      "only_when_staged": "plugins/",
+      "advisory": false,
+      "parallel_group": "linters"
+    },
+    {
+      "name": "autoflake",
+      "description": "Remove unused imports and variables on changed .py files",
+      "cmd": [
+        "sh",
+        "-c",
+        "FILES=$(git diff --name-only $(git merge-base HEAD origin/main)...HEAD 2>/dev/null | grep -E '^(mcpgateway|plugins)/.*\\.py$' | tr '\\n' ' '); [ -z \"$FILES\" ] && echo 'No changed Python files — skipping autoflake' && exit 0; echo \"Running autoflake on: $FILES\"; uv run autoflake --check --remove-all-unused-imports --remove-unused-variables --remove-duplicate-keys --ignore-init-module-imports $FILES"
+      ],
+      "only_when_staged": "mcpgateway/",
+      "advisory": false,
+      "parallel_group": "linters"
+    },
+    {
+      "name": "black:check",
+      "description": "Black formatter check on changed .py files (mcpgateway/ plugins/)",
+      "cmd": [
+        "sh",
+        "-c",
+        "FILES=$(git diff --name-only $(git merge-base HEAD origin/main)...HEAD 2>/dev/null | grep -E '^(mcpgateway|plugins)/.*\\.py$' | tr '\\n' ' '); [ -z \"$FILES\" ] && echo 'No changed Python files \u2014 skipping black' && exit 0; echo \"Running black on: $FILES\"; uv run black --check $FILES"
+      ],
+      "only_when_staged": "mcpgateway/",
+      "advisory": false
+    },
+    {
+      "name": "isort:check",
+      "description": "Import order check on changed .py files (mcpgateway/ plugins/)",
+      "cmd": [
+        "sh",
+        "-c",
+        "FILES=$(git diff --name-only $(git merge-base HEAD origin/main)...HEAD 2>/dev/null | grep -E '^(mcpgateway|plugins)/.*\\.py$' | tr '\\n' ' '); [ -z \"$FILES\" ] && echo 'No changed Python files \u2014 skipping isort' && exit 0; echo \"Running isort on: $FILES\"; uv run isort --check --profile=black $FILES"
+      ],
+      "only_when_staged": "mcpgateway/",
+      "advisory": false
+    },
+    {
+      "name": "bandit",
+      "description": "Bandit security scan on changed .py files (mcpgateway/)",
+      "cmd": [
+        "sh",
+        "-c",
+        "FILES=$(git diff --name-only $(git merge-base HEAD origin/main)...HEAD 2>/dev/null | grep -E '^mcpgateway/.*\\.py$' | tr '\\n' ' '); [ -z \"$FILES\" ] && echo 'No changed Python files \u2014 skipping bandit' && exit 0; echo \"Running bandit on: $FILES\"; uv run bandit $FILES -lll --confidence-level high"
+      ],
+      "only_when_staged": "mcpgateway/",
+      "advisory": false
+    },
+    {
+      "name": "flake8:mcpgateway",
+      "description": "Flake8 PEP-8 / logic errors on changed .py files (mcpgateway/)",
+      "cmd": [
+        "sh",
+        "-c",
+        "FILES=$(git diff --name-only $(git merge-base HEAD origin/main)...HEAD 2>/dev/null | grep -E '^mcpgateway/.*\\.py$' | tr '\\n' ' '); [ -z \"$FILES\" ] && echo 'No changed Python files \u2014 skipping flake8' && exit 0; echo \"Running flake8 on: $FILES\"; uv run flake8 $FILES -v"
+      ],
+      "only_when_staged": "mcpgateway/",
+      "advisory": false
+    },
+    {
+      "name": "flake8:plugins",
+      "description": "Flake8 PEP-8 / logic errors on changed .py files (plugins/)",
+      "cmd": [
+        "sh",
+        "-c",
+        "FILES=$(git diff --name-only $(git merge-base HEAD origin/main)...HEAD 2>/dev/null | grep -E '^plugins/.*\\.py$' | tr '\\n' ' '); [ -z \"$FILES\" ] && echo 'No changed Python files \u2014 skipping flake8' && exit 0; echo \"Running flake8 on: $FILES\"; uv run flake8 $FILES -v"
+      ],
+      "only_when_staged": "plugins/",
+      "advisory": false
+    },
+    {
+      "name": "check-ast",
+      "description": "Check Python AST (parse validity)",
+      "cmd": [
+        "sh",
+        "-c",
+        "FILES=$(git diff --name-only $(git merge-base HEAD origin/main)...HEAD 2>/dev/null | grep -E '^(mcpgateway|plugins)/.*\\.py$' | tr '\\n' ' '); [ -z \"$FILES\" ] && echo 'No changed Python files — skipping check-ast' && exit 0; echo \"Running check-ast on: $FILES\"; uv run pre-commit run check-ast --files $FILES"
+      ],
+      "only_when_staged": "mcpgateway/",
+      "advisory": false
+    },
+    {
+      "name": "check-builtin-literals",
+      "description": "Require literal syntax for empty/zero builtins",
+      "cmd": [
+        "sh",
+        "-c",
+        "FILES=$(git diff --name-only $(git merge-base HEAD origin/main)...HEAD 2>/dev/null | grep -E '^(mcpgateway|plugins)/.*\\.py$' | tr '\\n' ' '); [ -z \"$FILES\" ] && echo 'No changed Python files — skipping check-builtin-literals' && exit 0; echo \"Running check-builtin-literals on: $FILES\"; uv run pre-commit run check-builtin-literals --files $FILES"
+      ],
+      "only_when_staged": "mcpgateway/",
+      "advisory": false
+    },
+    {
+      "name": "check-docstring-first",
+      "description": "Check docstring is first in module",
+      "cmd": [
+        "sh",
+        "-c",
+        "FILES=$(git diff --name-only $(git merge-base HEAD origin/main)...HEAD 2>/dev/null | grep -E '^(mcpgateway|plugins)/.*\\.py$' | tr '\\n' ' '); [ -z \"$FILES\" ] && echo 'No changed Python files — skipping check-docstring-first' && exit 0; echo \"Running check-docstring-first on: $FILES\"; uv run pre-commit run check-docstring-first --files $FILES"
+      ],
+      "only_when_staged": "mcpgateway/",
+      "advisory": false
+    },
+    {
+      "name": "debug-statements",
+      "description": "Check for debugger imports and breakpoint() calls",
+      "cmd": [
+        "sh",
+        "-c",
+        "FILES=$(git diff --name-only $(git merge-base HEAD origin/main)...HEAD 2>/dev/null | grep -E '^(mcpgateway|plugins)/.*\\.py$' | tr '\\n' ' '); [ -z \"$FILES\" ] && echo 'No changed Python files — skipping debug-statements' && exit 0; echo \"Running debug-statements on: $FILES\"; uv run pre-commit run debug-statements --files $FILES"
+      ],
+      "only_when_staged": "mcpgateway/",
+      "advisory": false
+    },
+    {
+      "name": "name-tests-test",
+      "description": "Verify test files start with test_",
+      "cmd": [
+        "sh",
+        "-c",
+        "FILES=$(git diff --name-only $(git merge-base HEAD origin/main)...HEAD 2>/dev/null | grep -E '^tests/.*\\.py$' | grep -v -E '^tests/(.*/)?(pages|helpers|fuzzers|scripts|fixtures|migration|utils|manual|async|load|loadtest|jmeter|client|populate)/.*\\.py$' | tr '\\n' ' '); [ -z \"$FILES\" ] && echo 'No changed test files — skipping name-tests-test' && exit 0; echo \"Running name-tests-test on: $FILES\"; uv run pre-commit run name-tests-test --files $FILES"
+      ],
+      "only_when_staged": "tests/",
+      "advisory": false
+    },
+    {
+      "name": "interrogate",
+      "description": "Docstring coverage 100% (mcpgateway/)",
+      "cmd": [
+        "uv",
+        "run",
+        "interrogate",
+        "-vv",
+        "mcpgateway",
+        "--fail-under",
+        "100"
+      ],
+      "only_when_staged": "mcpgateway/",
+      "advisory": false
+    },
+    {
+      "name": "pylint:mcpgateway",
+      "description": "Pylint on changed .py files (mcpgateway/)",
+      "cmd": [
+        "sh",
+        "-c",
+        "FILES=$(git diff --name-only $(git merge-base HEAD origin/main)...HEAD 2>/dev/null | grep -E '^mcpgateway/.*\\.py$' | tr '\\n' ' '); [ -z \"$FILES\" ] && echo 'No changed mcpgateway Python files \u2014 skipping pylint' && exit 0; echo \"Running pylint on: $FILES\"; uv run pylint $FILES --rcfile=.pylintrc.mcpgateway --fail-on E --fail-under=10"
+      ],
+      "only_when_staged": "mcpgateway/",
+      "advisory": false
+    },
+    {
+      "name": "pylint:plugins",
+      "description": "Pylint on changed .py files (plugins/)",
+      "cmd": [
+        "sh",
+        "-c",
+        "FILES=$(git diff --name-only $(git merge-base HEAD origin/main)...HEAD 2>/dev/null | grep -E '^plugins/.*\\.py$' | tr '\\n' ' '); [ -z \"$FILES\" ] && echo 'No changed plugins Python files \u2014 skipping pylint' && exit 0; echo \"Running pylint on: $FILES\"; uv run pylint $FILES --rcfile=.pylintrc.plugins --fail-on E --fail-under=10"
+      ],
+      "only_when_staged": "plugins/",
+      "advisory": false
+    },
+    {
+      "name": "interrogate:plugins",
+      "description": "Docstring coverage 100% (plugins/)",
+      "cmd": [
+        "uv",
+        "run",
+        "interrogate",
+        "-vv",
+        "plugins",
+        "--fail-under",
+        "100"
+      ],
+      "only_when_staged": "plugins/",
+      "advisory": false
+    },
+    {
+      "name": "unimport:mcpgateway",
+      "description": "Unused import detection (mcpgateway/)",
+      "cmd": [
+        "uv",
+        "run",
+        "unimport",
+        "mcpgateway"
+      ],
+      "only_when_staged": "mcpgateway/",
+      "advisory": false
+    },
+    {
+      "name": "unimport:plugins",
+      "description": "Unused import detection (plugins/)",
+      "cmd": [
+        "uv",
+        "run",
+        "unimport",
+        "plugins"
+      ],
+      "only_when_staged": "plugins/",
+      "advisory": false
+    },
+    {
+      "name": "vulture:mcpgateway",
+      "description": "Dead code detection (mcpgateway/, advisory)",
+      "cmd": [
+        "uv",
+        "run",
+        "vulture",
+        "mcpgateway",
+        "--min-confidence",
+        "80",
+        "--exclude",
+        "*_pb2.py,*_pb2_grpc.py"
+      ],
+      "only_when_staged": "mcpgateway/",
+      "advisory": true
+    },
+    {
+      "name": "vulture:plugins",
+      "description": "Dead code detection (plugins/, advisory)",
+      "cmd": [
+        "uv",
+        "run",
+        "vulture",
+        "plugins",
+        "--min-confidence",
+        "80",
+        "--exclude",
+        "*_pb2.py,*_pb2_grpc.py"
+      ],
+      "only_when_staged": "plugins/",
+      "advisory": true
+    },
+    {
+      "name": "radon:mcpgateway",
+      "description": "Cyclomatic / maintainability complexity mcpgateway/ (advisory)",
+      "cmd": [
+        "sh",
+        "-c",
+        "uv run radon cc mcpgateway --min C --show-complexity && uv run radon mi mcpgateway --min B"
+      ],
+      "only_when_staged": "mcpgateway/",
+      "advisory": true
+    },
+    {
+      "name": "radon:plugins",
+      "description": "Cyclomatic / maintainability complexity plugins/ (advisory)",
+      "cmd": [
+        "sh",
+        "-c",
+        "uv run radon cc plugins --min C --show-complexity && uv run radon mi plugins --min B"
+      ],
+      "only_when_staged": "plugins/",
+      "advisory": true
+    },
+    {
+      "name": "diff-cover",
+      "description": "95% coverage on changed lines vs origin/main (advisory)",
+      "cmd": [
+        "sh",
+        "-c",
+        "N=$(( $(nproc) - 4 )); [ $N -lt 1 ] && N=1; uv run pytest -n $N --ignore=tests/fuzz --ignore=tests/e2e/test_entra_id_integration.py --cov=mcpgateway --cov-branch --cov-report=xml -q && uv run diff-cover coverage.xml --compare-branch=origin/main --fail-under=95"
+      ],
+      "only_when_staged": "mcpgateway/",
+      "advisory": true
+    },
+    {
+      "name": "pytest:coverage",
+      "description": "pytest + 95% line/branch coverage (nproc-4 workers)",
+      "cmd": [
+        "sh",
+        "-c",
+        "N=$(( $(nproc) - 4 )); [ $N -lt 1 ] && N=1; uv run pytest -n $N --ignore=tests/fuzz --ignore=tests/e2e/test_entra_id_integration.py --cov=mcpgateway --cov-branch --cov-report=term-missing --cov-fail-under=95 -q"
+      ],
+      "only_when_staged": "mcpgateway/",
+      "advisory": false
+    },
+    {
+      "name": "pytest:doctests",
+      "description": "Doctests with 30% coverage floor (nproc-4 workers)",
+      "cmd": [
+        "sh",
+        "-c",
+        "N=$(( $(nproc) - 4 )); [ $N -lt 1 ] && N=1; uv run pytest -n $N --doctest-modules mcpgateway/ --cov=mcpgateway --cov-fail-under=30 --tb=short -q"
+      ],
+      "only_when_staged": "mcpgateway/",
+      "advisory": false
+    }
+  ],
+  "rust": [
+    {
+      "name": "cargo:fmt-check",
+      "description": "Rust formatting check on changed .rs files (all Rust projects)",
+      "cmd": [
+        "sh",
+        "-c",
+        "\nFILES=$(git diff --name-only $(git merge-base HEAD origin/main)...HEAD 2>/dev/null | grep -E '\\.rs$'); [ -z \"$FILES\" ] && echo 'No changed Rust files \u2014 skipping cargo fmt' && exit 0;\n_FAIL=0\nwhile IFS= read -r dir; do\n  echo \"==> fmt: $dir\"\n  (cd \"$dir\" && cargo fmt -- --check) || _FAIL=1\ndone < <(find . -name 'Cargo.toml' ! -path '*/target/*' ! -path '*/.venv/*' \\\n  | while IFS= read -r f; do\n      dir=$(dirname \"$f\")\n      grep -q '^\\[workspace\\]' \"$f\" 2>/dev/null && echo \"$dir\" && continue\n      find \"$(dirname \"$dir\")\" -maxdepth 1 -name 'Cargo.toml' 2>/dev/null | grep -q . || echo \"$dir\"\n    done | sort -u)\nexit $_FAIL\n"
+      ],
+      "only_when_staged": "*.rs",
+      "advisory": false
+    },
+    {
+      "name": "cargo:clippy",
+      "description": "Rust Clippy lint on changed .rs files (all Rust projects)",
+      "cmd": [
+        "sh",
+        "-c",
+        "\nFILES=$(git diff --name-only $(git merge-base HEAD origin/main)...HEAD 2>/dev/null | grep -E '\\.rs$'); [ -z \"$FILES\" ] && echo 'No changed Rust files \u2014 skipping cargo clippy' && exit 0;\n_VENV=$(mktemp -d)\nuv venv \"$_VENV\" --python python3\n_FAIL=0\nwhile IFS= read -r dir; do\n  echo \"==> clippy: $dir\"\n  (cd \"$dir\" && PYO3_PYTHON=\"$_VENV/bin/python\" cargo clippy -- -D warnings) || _FAIL=1\ndone < <(find . -name 'Cargo.toml' ! -path '*/target/*' ! -path '*/.venv/*' \\\n  | while IFS= read -r f; do\n      dir=$(dirname \"$f\")\n      grep -q '^\\[workspace\\]' \"$f\" 2>/dev/null && echo \"$dir\" && continue\n      find \"$(dirname \"$dir\")\" -maxdepth 1 -name 'Cargo.toml' 2>/dev/null | grep -q . || echo \"$dir\"\n    done | sort -u)\nrm -rf \"$_VENV\"\nexit $_FAIL\n"
+      ],
+      "only_when_staged": "*.rs",
+      "advisory": false
+    },
+    {
+      "name": "cargo:test",
+      "description": "Rust unit tests (all Rust projects)",
+      "cmd": [
+        "sh",
+        "-c",
+        "\n_VENV=$(mktemp -d)\nuv venv \"$_VENV\" --python python3\n_FAIL=0\nwhile IFS= read -r dir; do\n  echo \"==> test: $dir\"\n  (cd \"$dir\" && PYO3_PYTHON=\"$_VENV/bin/python\" cargo test) || _FAIL=1\ndone < <(find . -name 'Cargo.toml' ! -path '*/target/*' ! -path '*/.venv/*' \\\n  | while IFS= read -r f; do\n      dir=$(dirname \"$f\")\n      grep -q '^\\[workspace\\]' \"$f\" 2>/dev/null && echo \"$dir\" && continue\n      find \"$(dirname \"$dir\")\" -maxdepth 1 -name 'Cargo.toml' 2>/dev/null | grep -q . || echo \"$dir\"\n    done | sort -u)\nrm -rf \"$_VENV\"\nexit $_FAIL\n"
+      ],
+      "advisory": false
+    },
+    {
+      "name": "cargo:audit",
+      "description": "Rust security audit (all Rust projects, advisory)",
+      "cmd": [
+        "sh",
+        "-c",
+        "\n_FAIL=0\nwhile IFS= read -r dir; do\n  echo \"==> audit: $dir\"\n  (cd \"$dir\" && cargo audit) || _FAIL=1\ndone < <(find . -name 'Cargo.toml' ! -path '*/target/*' ! -path '*/.venv/*' \\\n  | while IFS= read -r f; do\n      dir=$(dirname \"$f\")\n      grep -q '^\\[workspace\\]' \"$f\" 2>/dev/null && echo \"$dir\" && continue\n      find \"$(dirname \"$dir\")\" -maxdepth 1 -name 'Cargo.toml' 2>/dev/null | grep -q . || echo \"$dir\"\n    done | sort -u)\nexit $_FAIL\n"
+      ],
+      "advisory": true
+    },
+    {
+      "name": "maturin:build",
+      "description": "Build Rust extension wheels (plugins_rust/)",
+      "cmd": [
+        "sh",
+        "-c",
+        "_VENV=$(mktemp -d) && uv venv \"$_VENV\" --python python3 && (cd plugins_rust && PYO3_PYTHON=\"$_VENV/bin/python\" maturin build --release --out dist); _EC=$?; rm -rf \"$_VENV\"; exit $_EC"
+      ],
+      "only_when_staged": "plugins_rust/",
+      "advisory": false
+    },
+    {
+      "name": "rust:test-python",
+      "description": "Python integration tests for Rust extension (plugins_rust/)",
+      "cmd": [
+        "sh",
+        "-c",
+        "cd plugins_rust && make dev && uv run make test-python"
+      ],
+      "only_when_staged": "plugins_rust/",
+      "advisory": false
+    },
+    {
+      "name": "rust:test-differential",
+      "description": "Differential tests for Rust extension (plugins_rust/)",
+      "cmd": [
+        "sh",
+        "-c",
+        "cd plugins_rust && uv run make test-differential"
+      ],
+      "only_when_staged": "plugins_rust/",
+      "advisory": false
+    },
+    {
+      "name": "tools-rust:check",
+      "description": "Cargo check (tools_rust/wrapper/)",
+      "cmd": [
+        "sh",
+        "-c",
+        "cd tools_rust/wrapper && make check"
+      ],
+      "only_when_staged": "tools_rust/",
+      "advisory": false
+    },
+    {
+      "name": "tools-rust:build",
+      "description": "Release build (tools_rust/wrapper/)",
+      "cmd": [
+        "sh",
+        "-c",
+        "cd tools_rust/wrapper && make build-release"
+      ],
+      "only_when_staged": "tools_rust/",
+      "advisory": false
+    },
+    {
+      "name": "tools-rust:licenses",
+      "description": "Cargo-deny license check (tools_rust/wrapper/, advisory)",
+      "cmd": [
+        "sh",
+        "-c",
+        "cd tools_rust/wrapper && cargo install cargo-deny --quiet && make licenses"
+      ],
+      "only_when_staged": "tools_rust/",
+      "advisory": true
+    },
+    {
+      "name": "rust:doc",
+      "description": "Rust documentation build (plugins_rust/, advisory)",
+      "cmd": [
+        "sh",
+        "-c",
+        "cd plugins_rust && make doc"
+      ],
+      "only_when_staged": "plugins_rust/",
+      "advisory": true
+    }
+  ],
+  "ui": [
+    {
+     "name": "eslint",
+      "description": "CI/CD command for eslint",
+      "cmd": [
+        "sh",
+        "-c",
+        "npm install --no-save eslint neostandard eslint-config-prettier eslint-plugin-prettier prettier && npx eslint --fix 'mcpgateway/static/*.js'"
+      ],
+      "only_when_staged": "mcpgateway/static/",
+      "advisory": false 
+    },
+    {
+      "name": "vitest",
+      "description": "JavaScript unit tests (npm ci + Vitest)",
+      "cmd": [
+        "sh",
+        "-c",
+        "npm ci && npx vitest run"
+      ],
+      "only_when_staged": "mcpgateway/static/",
+      "advisory": false
+    },
+    {
+      "name": "htmlhint",
+      "description": "HTML linting on changed .html files (mcpgateway/templates/)",
+      "cmd": [
+        "sh",
+        "-c",
+        "[ -d node_modules ] || npm ci; FILES=$(git diff --name-only $(git merge-base HEAD origin/main)...HEAD 2>/dev/null | grep -E '^mcpgateway/templates/.*\\.html$' | tr '\\n' ' '); [ -z \"$FILES\" ] && echo 'No changed HTML files \u2014 skipping htmlhint' && exit 0; echo \"Running htmlhint on: $FILES\"; npx htmlhint $FILES"
+      ],
+      "only_when_staged": "mcpgateway/templates/",
+      "advisory": false
+    },
+    {
+      "name": "stylelint",
+      "description": "CSS linting on changed .css files (mcpgateway/static/)",
+      "cmd": [
+        "sh",
+        "-c",
+        "[ -d node_modules ] || npm ci; FILES=$(git diff --name-only $(git merge-base HEAD origin/main)...HEAD 2>/dev/null | grep -E '^mcpgateway/static/.*\\.css$' | tr '\\n' ' '); [ -z \"$FILES\" ] && echo 'No changed CSS files \u2014 skipping stylelint' && exit 0; echo \"Running stylelint on: $FILES\"; npx stylelint $FILES"
+      ],
+      "only_when_staged": "mcpgateway/static/",
+      "advisory": false
+    },
+    {
+      "name": "jshint",
+      "description": "JSHint on changed .js files (mcpgateway/static/)",
+      "cmd": [
+        "sh",
+        "-c",
+        "[ -d node_modules ] || npm ci; FILES=$(git diff --name-only $(git merge-base HEAD origin/main)...HEAD 2>/dev/null | grep -E '^mcpgateway/static/.*\\.js$' | tr '\\n' ' '); [ -z \"$FILES\" ] && echo 'No changed JS files \u2014 skipping jshint' && exit 0; echo \"Running jshint on: $FILES\"; npx jshint --config .jshintrc $FILES"
+      ],
+      "only_when_staged": "mcpgateway/static/",
+      "advisory": false
+    },
+    {
+      "name": "retire",
+      "description": "Retire.js security scan (mcpgateway/static/, advisory)",
+      "cmd": [
+        "sh",
+        "-c",
+        "[ -d node_modules ] || npm ci; npx --yes retire --path mcpgateway/static"
+      ],
+      "only_when_staged": "mcpgateway/static/",
+      "advisory": true
+    },
+    {
+      "name": "jscpd",
+      "description": "Copy-paste detection (mcpgateway/static/ + templates/, advisory)",
+      "cmd": [
+        "sh",
+        "-c",
+        "[ -d node_modules ] || npm ci; npx --yes jscpd mcpgateway/static/ mcpgateway/templates/"
+      ],
+      "only_when_staged": "mcpgateway/static/",
+      "advisory": true
+    },
+    {
+      "name": "nodejsscan",
+      "description": "NodeJSScan JS security scanner (mcpgateway/static/, advisory)",
+      "cmd": [
+        "sh",
+        "-c",
+        "uv run nodejsscan --directory ./mcpgateway/static"
+      ],
+      "only_when_staged": "mcpgateway/static/",
+      "advisory": true
+    },
+    {
+      "name": "npm-audit",
+      "description": "npm dependency security audit (advisory)",
+      "cmd": [
+        "sh",
+        "-c",
+        "[ -d node_modules ] || npm ci; npm audit --audit-level=high"
+      ],
+      "only_when_staged": "mcpgateway/static/",
+      "advisory": true
+    }
+  ],
+  "integration": [
+    {
+      "name": "alembic:check",
+      "description": "Run alembic upgrade head against SQLite (temp file)",
+      "cmd": [
+        "bash",
+        "-c",
+        ". ~/.venv/mcpgateway/bin/activate && set -euo pipefail && ALEMBIC='alembic -c mcpgateway/alembic.ini' && TMPDB=$(mktemp /tmp/alembic-check-XXXXXX.db) && trap 'rm -f \"$TMPDB\"' EXIT && echo '==> SQLite: alembic upgrade head' && DATABASE_URL=\"sqlite:///$TMPDB\" $ALEMBIC upgrade head 2>&1 | tail -5 && echo 'SQLite: OK'"
+      ],
+      "only_when_staged": "mcpgateway/alembic/",
+      "advisory": false
+    },
+    {
+      "name": "alembic:upgrade",
+      "description": "Database migration upgrade validation (SQLite + PostgreSQL, docker-managed)",
+      "cmd": [
+        "bash",
+        "scripts/ci/run_upgrade_validation.sh"
+      ],
+      "advisory": false
+    },
+    {
+      "name": "playwright:smoke",
+      "description": "Playwright UI smoke tests \u2014 mirrors .github/workflows/playwright.yml: make serve on :4444 then make test-ui-ci-smoke",
+      "cmd": [
+        "sh",
+        "-c",
+        "set -euo pipefail\ncleanup() {\n  _s=$?\n  if [ -f /tmp/mcpgateway-ci.pid ] && kill -0 \"$(cat /tmp/mcpgateway-ci.pid)\" 2>/dev/null; then\n    kill \"$(cat /tmp/mcpgateway-ci.pid)\" || true; sleep 1\n  fi\n  rm -f /tmp/mcpgateway-ci.pid /tmp/mcpgateway-gunicorn.lock\n  if [ \"$_s\" -ne 0 ]; then\n    echo '==> Gateway log (last 100 lines):'; tail -n 100 /tmp/mcpgateway-ci.log || true\n  fi\n  return 0\n}\ntrap cleanup EXIT\ncp .env.example .env 2>/dev/null || true\nexport TEST_BASE_URL='http://127.0.0.1:4444'\nexport GUNICORN_WORKERS=1\nexport MCPGATEWAY_UI_ENABLED=true\nexport MCPGATEWAY_ADMIN_API_ENABLED=true\nexport SECURE_COOKIES=false\nexport FORCE_START=true\nsource ~/.venv/mcpgateway/bin/activate\nmake serve > /tmp/mcpgateway-ci.log 2>&1 &\necho $! > /tmp/mcpgateway-ci.pid\necho '==> Waiting for gateway on http://127.0.0.1:4444 ...'\nfor i in $(seq 1 120); do\n  curl -fsS \"${TEST_BASE_URL}/health\" >/dev/null 2>&1 && break\n  kill -0 \"$(cat /tmp/mcpgateway-ci.pid)\" 2>/dev/null || { echo 'Gateway exited during startup'; exit 1; }\n  sleep 1\ndone\ncurl -fsS \"${TEST_BASE_URL}/health\" >/dev/null\nmake test-ui-ci-smoke\n"
+      ],
+      "advisory": true
+    }
+  ],
+  "all": [
+    {
+      "name": "gitleaks",
+      "description": "Detect hardcoded secrets (API keys, passwords)",
+      "cmd": [
+        "sh",
+        "-c",
+        "uv run pre-commit run gitleaks --all-files"
+      ],
+      "advisory": false
+    },
+    {
+      "name": "detect-private-key",
+      "description": "Detect presence of private keys",
+      "cmd": [
+        "sh",
+        "-c",
+        "uv run pre-commit run detect-private-key --all-files"
+      ],
+      "advisory": false
+    },
+    {
+      "name": "forbid-content-reference",
+      "description": "Prevent :contentReference patterns",
+      "cmd": [
+        "sh",
+        "-c",
+        "uv run pre-commit run forbid-content-reference --all-files"
+      ],
+      "advisory": false
+    },
+    {
+      "name": "forbid-oai-citations",
+      "description": "Prevent [oaicite:??digits] patterns",
+      "cmd": [
+        "sh",
+        "-c",
+        "uv run pre-commit run forbid-oai-citations --all-files"
+      ],
+      "advisory": false
+    },
+    {
+      "name": "forbid-ai-stock-phrases",
+      "description": "Prevent common AI-generated phrases",
+      "cmd": [
+        "sh",
+        "-c",
+        "uv run pre-commit run forbid-ai-stock-phrases --all-files"
+      ],
+      "advisory": false
+    },
+    {
+      "name": "forbid-placeholder-citations",
+      "description": "Prevent placeholder citations like (Author, 2023)",
+      "cmd": [
+        "sh",
+        "-c",
+        "uv run pre-commit run forbid-placeholder-citations --all-files"
+      ],
+      "advisory": false
+    },
+    {
+      "name": "forbid-source-placeholders",
+      "description": "Prevent (Source:...) placeholders",
+      "cmd": [
+        "sh",
+        "-c",
+        "uv run pre-commit run forbid-source-placeholders --all-files"
+      ],
+      "advisory": false
+    },
+    {
+      "name": "forbid-malformed-code-fences",
+      "description": "Prevent code fences with 4+ backticks",
+      "cmd": [
+        "sh",
+        "-c",
+        "uv run pre-commit run forbid-malformed-code-fences --all-files"
+      ],
+      "advisory": false
+    },
+    {
+      "name": "warn-ai-transitions",
+      "description": "Warn about common AI transition phrases (advisory)",
+      "cmd": [
+        "sh",
+        "-c",
+        "uv run pre-commit run warn-ai-transitions --all-files"
+      ],
+      "advisory": true
+    },
+    {
+      "name": "fix-smartquotes",
+      "description": "Replace smart/curly quotes with ASCII quotes",
+      "cmd": [
+        "sh",
+        "-c",
+        "uv run pre-commit run fix-smartquotes --all-files"
+      ],
+      "advisory": false
+    },
+    {
+      "name": "fix-ligatures",
+      "description": "Replace typographic ligatures with standard characters",
+      "cmd": [
+        "sh",
+        "-c",
+        "uv run pre-commit run fix-ligatures --all-files"
+      ],
+      "advisory": false
+    },
+    {
+      "name": "fix-spaces",
+      "description": "Normalize Unicode spaces to regular spaces",
+      "cmd": [
+        "sh",
+        "-c",
+        "uv run pre-commit run fix-spaces --all-files"
+      ],
+      "advisory": false
+    },
+    {
+      "name": "forbid-bidi-controls",
+      "description": "Prevent bidirectional control characters",
+      "cmd": [
+        "sh",
+        "-c",
+        "uv run pre-commit run forbid-bidi-controls --all-files"
+      ],
+      "advisory": false
+    },
+    {
+      "name": "end-of-file-fixer",
+      "description": "Ensure files end with one newline",
+      "cmd": [
+        "sh",
+        "-c",
+        "uv run pre-commit run end-of-file-fixer --all-files"
+      ],
+      "advisory": false
+    },
+    {
+      "name": "trailing-whitespace",
+      "description": "Trim trailing whitespace",
+      "cmd": [
+        "sh",
+        "-c",
+        "uv run pre-commit run trailing-whitespace --all-files"
+      ],
+      "advisory": false
+    },
+    {
+      "name": "mixed-line-ending",
+      "description": "Fix mixed line endings (enforce LF)",
+      "cmd": [
+        "sh",
+        "-c",
+        "uv run pre-commit run mixed-line-ending --all-files"
+      ],
+      "advisory": false
+    },
+    {
+      "name": "fix-byte-order-marker",
+      "description": "Remove UTF-8 byte order marker",
+      "cmd": [
+        "sh",
+        "-c",
+        "uv run pre-commit run fix-byte-order-marker --all-files"
+      ],
+      "advisory": false
+    },
+    {
+      "name": "requirements-txt-fixer",
+      "description": "Sort entries in requirements.txt",
+      "cmd": [
+        "sh",
+        "-c",
+        "uv run pre-commit run requirements-txt-fixer --all-files"
+      ],
+      "advisory": false
+    },
+    {
+      "name": "check-added-large-files",
+      "description": "Prevent committing large files",
+      "cmd": [
+        "sh",
+        "-c",
+        "uv run pre-commit run check-added-large-files --all-files"
+      ],
+      "advisory": false
+    },
+    {
+      "name": "check-case-conflict",
+      "description": "Check for case-insensitive filesystem conflicts",
+      "cmd": [
+        "sh",
+        "-c",
+        "uv run pre-commit run check-case-conflict --all-files"
+      ],
+      "advisory": false
+    },
+    {
+      "name": "check-merge-conflict",
+      "description": "Check for merge conflict strings",
+      "cmd": [
+        "sh",
+        "-c",
+        "uv run pre-commit run check-merge-conflict --all-files"
+      ],
+      "advisory": false
+    },
+    {
+      "name": "check-symlinks",
+      "description": "Check for broken symlinks",
+      "cmd": [
+        "sh",
+        "-c",
+        "uv run pre-commit run check-symlinks --all-files"
+      ],
+      "advisory": false
+    },
+    {
+      "name": "destroyed-symlinks",
+      "description": "Detect symlinks changed to regular files",
+      "cmd": [
+        "sh",
+        "-c",
+        "uv run pre-commit run destroyed-symlinks --all-files"
+      ],
+      "advisory": false
+    },
+    {
+      "name": "check-executables-have-shebangs",
+      "description": "Ensure executables have shebangs",
+      "cmd": [
+        "sh",
+        "-c",
+        "uv run pre-commit run check-executables-have-shebangs --all-files"
+      ],
+      "advisory": false
+    },
+    {
+      "name": "check-shebang-scripts-are-executable",
+      "description": "Ensure shebang scripts are executable",
+      "cmd": [
+        "sh",
+        "-c",
+        "uv run pre-commit run check-shebang-scripts-are-executable --all-files"
+      ],
+      "advisory": false
+    },
+    {
+      "name": "check-json",
+      "description": "Check JSON syntax",
+      "cmd": [
+        "sh",
+        "-c",
+        "uv run pre-commit run check-json --all-files"
+      ],
+      "advisory": false
+    },
+    {
+      "name": "check-yaml",
+      "description": "Check YAML syntax",
+      "cmd": [
+        "sh",
+        "-c",
+        "uv run pre-commit run check-yaml --all-files"
+      ],
+      "advisory": false
+    },
+    {
+      "name": "check-toml",
+      "description": "Check TOML syntax",
+      "cmd": [
+        "sh",
+        "-c",
+        "uv run pre-commit run check-toml --all-files"
+      ],
+      "advisory": false
+    },
+    {
+      "name": "check-xml",
+      "description": "Check XML syntax",
+      "cmd": [
+        "sh",
+        "-c",
+        "uv run pre-commit run check-xml --all-files"
+      ],
+      "advisory": false
+    },
+    {
+      "name": "forbid-new-submodules",
+      "description": "Prevent addition of new git submodules",
+      "cmd": [
+        "sh",
+        "-c",
+        "uv run pre-commit run forbid-new-submodules --all-files"
+      ],
+      "advisory": false
+    },
+    {
+      "name": "forbid-submodules",
+      "description": "Forbid any submodules in repository",
+      "cmd": [
+        "sh",
+        "-c",
+        "uv run pre-commit run forbid-submodules --all-files"
+      ],
+      "advisory": false
+    },
+    {
+      "name": "check-vcs-permalinks",
+      "description": "Ensure VCS links are permalinks",
+      "cmd": [
+        "sh",
+        "-c",
+        "uv run pre-commit run check-vcs-permalinks --all-files"
+      ],
+      "advisory": false
+    },
+    {
+      "name": "remove-crlf",
+      "description": "Replace CRLF line endings with LF",
+      "cmd": [
+        "sh",
+        "-c",
+        "uv run pre-commit run remove-crlf --all-files"
+      ],
+      "advisory": false
+    },
+    {
+      "name": "remove-tabs",
+      "description": "Replace tabs with whitespaces",
+      "cmd": [
+        "sh",
+        "-c",
+        "uv run pre-commit run remove-tabs --all-files"
+      ],
+      "advisory": false
+    },
+    {
+      "name": "yamllint",
+      "description": "YAML syntax check on changed .yaml/.yml files",
+      "cmd": [
+        "sh",
+        "-c",
+        "FILES=$(git diff --name-only $(git merge-base HEAD origin/main)...HEAD 2>/dev/null | grep -E '\\.(yaml|yml)$' | tr '\\n' ' '); [ -z \"$FILES\" ] && echo 'No changed YAML files \u2014 skipping yamllint' && exit 0; echo \"Running yamllint on: $FILES\"; uv run yamllint -c .yamllint $FILES"
+      ],
+      "advisory": true
+    },
+    {
+      "name": "jsonlint",
+      "description": "JSON syntax check on changed *.json files",
+      "cmd": [
+        "sh",
+        "-c",
+        "FILES=$(git diff --name-only $(git merge-base HEAD origin/main)...HEAD 2>/dev/null | grep -E '\\.json$' | grep -v '^node_modules/'); [ -z \"$FILES\" ] && echo 'No changed JSON files \u2014 skipping jsonlint' && exit 0; echo \"Running jsonlint on: $FILES\"; echo \"$FILES\" | xargs -I{} jq empty \"{}\""
+      ],
+      "advisory": false
+    },
+    {
+      "name": "tomllint",
+      "description": "TOML syntax check on changed *.toml files",
+      "cmd": [
+        "sh",
+        "-c",
+        "FILES=$(git diff --name-only $(git merge-base HEAD origin/main)...HEAD 2>/dev/null | grep -E '\\.toml$' | grep -v '^plugin_templates/' | grep -v '^mcp-servers/templates/'); [ -z \"$FILES\" ] && echo 'No changed TOML files \u2014 skipping tomllint' && exit 0; echo \"Running tomllint on: $FILES\"; echo \"$FILES\" | xargs -I{} tomlcheck \"{}\""
+      ],
+      "advisory": false
+    },
+    {
+      "name": "license-check",
+      "description": "License policy check (advisory)",
+      "cmd": [
+        "uv",
+        "run",
+        "python",
+        "scripts/license_checker.py",
+        "--config",
+        "license-policy.toml",
+        "--report-json",
+        "license-check-report.json"
+      ],
+      "advisory": false
+    },
+    {
+      "name": "verify-package",
+      "description": "Package verification (twine check, check-manifest, pyroma)",
+      "cmd": [
+        "sh",
+        "-c",
+        "uv run twine check dist/* && uv run check-manifest && uv run pyroma -d ."
+      ],
+      "advisory": false
+    }
+  ]
+}
