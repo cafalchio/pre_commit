@@ -2,7 +2,6 @@ mod app;
 mod checks;
 mod config;
 mod draw;
-mod runner;
 
 use std::io;
 
@@ -17,30 +16,16 @@ use crossterm::{
 use ratatui::{backend::CrosstermBackend, Terminal};
 
 use app::{App, Mode};
-use config::parse_args;
 use draw::draw;
-use runner::run_headless;
 
 fn main() -> io::Result<()> {
-    let config = parse_args().unwrap_or_else(|e| {
-        eprintln!("error: {e}");
-        eprintln!("Run with --help for usage.");
-        std::process::exit(1);
-    });
-
-    // Headless mode: run one check and exit, no TUI.
-    if let Some(ref name) = config.run_check {
-        run_headless(name, &config.repo);
-        return Ok(());
-    }
-
     enable_raw_mode()?;
     let mut stdout = io::stdout();
     execute!(stdout, EnterAlternateScreen, EnableMouseCapture)?;
     let backend = CrosstermBackend::new(stdout);
     let mut terminal = Terminal::new(backend)?;
 
-    let mut app = App::new(config);
+    let mut app = App::new();
 
     loop {
         app.refresh_sys_stats();
@@ -55,6 +40,9 @@ fn main() -> io::Result<()> {
                         KeyCode::Char('q') | KeyCode::Esc => {
                             app.cancel_running();
                             break;
+                        }
+                        KeyCode::Char('r') => {
+                            app.reset_to_selecting();
                         }
                         KeyCode::Char('m') => {
                             app.mouse_capture = !app.mouse_capture;

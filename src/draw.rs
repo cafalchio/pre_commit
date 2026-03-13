@@ -8,10 +8,6 @@ use ratatui::{
 
 use crate::app::{App, CheckStatus, ListEntry, Mode};
 
-// ---------------------------------------------------------------------------
-// Main draw dispatcher
-// ---------------------------------------------------------------------------
-
 pub fn draw(f: &mut Frame, app: &mut App) {
     let area = f.area();
 
@@ -20,13 +16,11 @@ pub fn draw(f: &mut Frame, app: &mut App) {
         .constraints([Constraint::Length(3), Constraint::Min(5), Constraint::Length(3)])
         .split(area);
 
-    // Setup screen is rendered entirely separately.
     if let Mode::Setup = &app.mode {
         draw_setup(f, app, area);
         return;
     }
 
-    // ── Title ─────────────────────────────────────────────────────────────────
     let state_label = match &app.mode {
         Mode::Setup => unreachable!(),
         Mode::Selecting => "Select & Run",
@@ -38,7 +32,6 @@ pub fn draw(f: &mut Frame, app: &mut App) {
     let left  = format!(" {}  [{}]  branch: {} ", app.repo_root.display(), state_label, app.current_branch);
     let right_cpu = format!("CPU:{:3.0}% ", app.cpu_pct);
     let right_mem = format!("MEM:{:3.0}% ", app.mem_pct);
-    // -2 for the left/right border chars; saturate so we never underflow
     let inner_width = root[0].width.saturating_sub(2) as usize;
     let pad = inner_width.saturating_sub(left.len() + right_cpu.len() + right_mem.len());
     let title_line = Line::from(vec![
@@ -56,15 +49,13 @@ pub fn draw(f: &mut Frame, app: &mut App) {
         root[0],
     );
 
-    // ── Main split ────────────────────────────────────────────────────────────
     let main = Layout::default()
         .direction(Direction::Horizontal)
-        .constraints([Constraint::Percentage(40), Constraint::Percentage(60)])
+        .constraints([Constraint::Percentage(30), Constraint::Percentage(70)])
         .split(root[1]);
 
     app.list_area = Some(main[0]);
 
-    // ── Check list ────────────────────────────────────────────────────────────
     let running_check_idx = match &app.mode {
         Mode::Running { idx } => Some(*idx),
         _ => None,
@@ -72,14 +63,14 @@ pub fn draw(f: &mut Frame, app: &mut App) {
 
     let items: Vec<ListItem> = app.entries.iter().map(|entry| {
         match entry {
-            ListEntry::GroupHeader(group) => {
-                let (sel, tot) = app.group_state(*group);
+            ListEntry::GroupHeader(group_idx) => {
+                let (sel, tot) = app.group_state(*group_idx);
                 let cb = if sel == 0 { "[ ]" } else if sel == tot { "[x]" } else { "[-]" };
-                let color = group.color();
+                let group = &app.groups[*group_idx];
                 ListItem::new(Line::from(vec![
                     Span::styled(
-                        format!("{cb} ─ {} ({sel}/{tot})", group.label()),
-                        Style::default().fg(color).add_modifier(Modifier::BOLD),
+                        format!("{cb} ─ {} ({sel}/{tot})", group.label),
+                        Style::default().fg(group.color).add_modifier(Modifier::BOLD),
                     ),
                 ]))
             }
@@ -103,39 +94,32 @@ pub fn draw(f: &mut Frame, app: &mut App) {
                         ("   ", s, s, String::new(), Style::default().fg(Color::DarkGray))
                     }
                     CheckStatus::Running => (
-                        ">> ",
+                        "⏳ ",
                         Style::default().fg(Color::Cyan).add_modifier(Modifier::BOLD),
                         Style::default().fg(Color::Cyan).add_modifier(Modifier::BOLD),
                         String::new(),
                         Style::default().fg(Color::DarkGray),
                     ),
                     CheckStatus::Passed(t) => (
-                        "✓  ",
+                        "✅ ",
                         Style::default().fg(Color::Green).add_modifier(Modifier::BOLD),
                         Style::default().fg(Color::Green),
                         format!(" {t:.1}s"),
                         Style::default().fg(Color::Green),
                     ),
                     CheckStatus::Failed(t) => (
-                        "✗  ",
+                        "🛑 ",
                         Style::default().fg(Color::Red).add_modifier(Modifier::BOLD),
                         Style::default().fg(Color::Red).add_modifier(Modifier::BOLD),
                         format!(" {t:.1}s"),
                         Style::default().fg(Color::Red),
                     ),
                     CheckStatus::Skipped => (
-                        "---",
+                        "↷ ",
                         Style::default().fg(Color::DarkGray),
                         Style::default().fg(Color::DarkGray),
                         String::new(),
                         Style::default().fg(Color::DarkGray),
-                    ),
-                    CheckStatus::Advisory(t) => (
-                        "⚠  ",
-                        Style::default().fg(Color::Yellow).add_modifier(Modifier::BOLD),
-                        Style::default().fg(Color::Yellow),
-                        format!(" {t:.1}s"),
-                        Style::default().fg(Color::Yellow),
                     ),
                 };
 
@@ -158,17 +142,17 @@ pub fn draw(f: &mut Frame, app: &mut App) {
         .highlight_style(Style::default().add_modifier(Modifier::REVERSED));
     f.render_stateful_widget(list, main[0], &mut app.list_state);
 
-    // ── Output / description panel ────────────────────────────────────────────
     let output_content: Vec<Line> = if app.output_lines.is_empty() {
         match app.list_state.selected().map(|ei| &app.entries[ei]) {
-            Some(ListEntry::GroupHeader(group)) => {
-                let (sel, tot) = app.group_state(*group);
+            Some(ListEntry::GroupHeader(group_idx)) => {
+                let (sel, tot) = app.group_state(*group_idx);
+                let group = &app.groups[*group_idx];
                 vec![
                     Line::from(vec![
                         Span::styled("Group: ", Style::default().add_modifier(Modifier::BOLD)),
                         Span::styled(
-                            group.label(),
-                            Style::default().fg(group.color()).add_modifier(Modifier::BOLD),
+                            group.label.clone(),
+                            Style::default().fg(group.color).add_modifier(Modifier::BOLD),
                         ),
                     ]),
                     Line::from(vec![
@@ -181,10 +165,6 @@ pub fn draw(f: &mut Frame, app: &mut App) {
             }
             Some(ListEntry::Check(ci)) => {
                 let check = &app.checks[*ci];
-                let staged_note = match &check.only_when_staged {
-                    Some(p) => format!("Only runs when '{p}' files are staged."),
-                    None => "Runs unconditionally.".to_string(),
-                };
                 vec![
                     Line::from(vec![
                         Span::styled("Name:  ", Style::default().add_modifier(Modifier::BOLD)),
@@ -193,10 +173,6 @@ pub fn draw(f: &mut Frame, app: &mut App) {
                     Line::from(vec![
                         Span::styled("About: ", Style::default().add_modifier(Modifier::BOLD)),
                         Span::raw(check.description.clone()),
-                    ]),
-                    Line::from(vec![
-                        Span::styled("When:  ", Style::default().add_modifier(Modifier::BOLD)),
-                        Span::raw(staged_note),
                     ]),
                     Line::raw(""),
                     Line::from(vec![
@@ -248,16 +224,13 @@ pub fn draw(f: &mut Frame, app: &mut App) {
         main[1],
     );
 
-    // ── Status bar ────────────────────────────────────────────────────────────
     if let Mode::Done = &app.mode {
-        let (passed, failed, skipped, advisory) = app.summary_counts();
+        let (passed, failed, skipped) = app.summary_counts();
         let summary = format!(
-            " Done — OK: {passed}  FAIL: {failed}  WARN: {advisory}  SKIP: {skipped}  | r: back to select | Enter: run again | q: quit "
+            " Done — OK: {passed}  FAIL: {failed}  SKIP: {skipped}  | r: back to select | Enter: run again | q: quit "
         );
         let color = if failed > 0 {
             Color::Red
-        } else if advisory > 0 {
-            Color::Yellow
         } else {
             Color::Green
         };
@@ -284,7 +257,7 @@ pub fn draw(f: &mut Frame, app: &mut App) {
         }
         Mode::Running { idx } => (
             format!(" Running {}/{} ", idx + 1, app.checks.len()),
-            " Running… PgUp/PgDn: scroll | m: toggle mouse (to select text) ".to_string(),
+            " Running… PgUp/PgDn: scroll | r: stop & reset | m: toggle mouse".to_string(),
         ),
         Mode::Done => unreachable!(),
     };
@@ -308,12 +281,7 @@ pub fn draw(f: &mut Frame, app: &mut App) {
     );
 }
 
-// ---------------------------------------------------------------------------
-// Setup screen
-// ---------------------------------------------------------------------------
-
 pub fn draw_setup(f: &mut Frame, app: &App, area: Rect) {
-    // Log panel height: show if there's log output (checkout errors), min 0 max 8
     let log_height = if app.setup_log.is_empty() { 0u16 } else { 8u16 };
 
     let vert = Layout::default()
@@ -337,16 +305,11 @@ pub fn draw_setup(f: &mut Frame, app: &App, area: Rect) {
     f.render_widget(
         Block::default()
             .borders(Borders::ALL)
-            .title(" mcp-context-forge Pre-commit — Project Setup ")
+            .title(" mcp-context-forge Pre-commit — Project Setup — by. Matheus Cafalchio ")
             .style(Style::default().fg(Color::Cyan).add_modifier(Modifier::BOLD)),
         form_area,
     );
 
-    // Layout inside the form:
-    // [0] repo label  [1] repo input  [2] blank
-    // [3] branch label  [4] branch input  [5] current-branch info
-    // [6] error line  [7] hint
-    // [8] log panel (only when log_height > 0)
     let mut constraints = vec![
         Constraint::Length(1), // repo label
         Constraint::Length(3), // repo input
@@ -367,7 +330,6 @@ pub fn draw_setup(f: &mut Frame, app: &App, area: Rect) {
         .margin(1)
         .split(form_area);
 
-    // ── Repo field ────────────────────────────────────────────────────────────
     f.render_widget(
         Paragraph::new("Project path (required):")
             .style(Style::default().add_modifier(Modifier::BOLD)),
@@ -389,7 +351,6 @@ pub fn draw_setup(f: &mut Frame, app: &App, area: Rect) {
         inner[1],
     );
 
-    // ── Branch / PR field ─────────────────────────────────────────────────────
     f.render_widget(
         Paragraph::new("Branch or PR number (optional — leave blank to stay on current):")
             .style(Style::default().add_modifier(Modifier::BOLD)),
@@ -411,14 +372,12 @@ pub fn draw_setup(f: &mut Frame, app: &App, area: Rect) {
         inner[4],
     );
 
-    // ── Current branch info ───────────────────────────────────────────────────
     f.render_widget(
         Paragraph::new(format!("  Current branch: {}", app.current_branch))
             .style(Style::default().fg(Color::Cyan)),
         inner[5],
     );
 
-    // ── Error line ────────────────────────────────────────────────────────────
     if let Some(err) = &app.setup_error {
         f.render_widget(
             Paragraph::new(format!("  ✗ {err}"))
@@ -427,14 +386,12 @@ pub fn draw_setup(f: &mut Frame, app: &App, area: Rect) {
         );
     }
 
-    // ── Hint ──────────────────────────────────────────────────────────────────
     f.render_widget(
         Paragraph::new("  Tab/↑↓: switch field   Enter: confirm   Esc: quit")
             .style(Style::default().fg(Color::DarkGray)),
         inner[7],
     );
 
-    // ── Checkout log (shown on error) ─────────────────────────────────────────
     if log_height > 0 {
         let log_text = app.setup_log.join("\n");
         let log_style = if app.setup_error.is_some() {
